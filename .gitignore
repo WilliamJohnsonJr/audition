@@ -1,0 +1,10 @@
+.venv
+*/.venv
+.DS_Store
+*/.DS_Store
+node_modules
+*/node_modules
+.vs_code
+*/.vs_code
+__pycache__
+*/__pycache__
