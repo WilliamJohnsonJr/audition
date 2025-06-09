@@ -1,0 +1,1273 @@
+Parameters:
+  MyUsername:
+    Type: String
+    Default: iamadmin
+  MyIPAddressCIDR:
+    Type: String
+    NoEcho: True
+  MyAccountNumber:
+    Type: String
+    NoEcho: True
+  DBUsername:
+    Type: String
+    NoEcho: True
+  DBPassword:
+    Type: String
+    NoEcho: True
+  DBName:
+    Type: String
+    NoEcho: True
+    Default: "capstone"
+Resources:
+  EC2RouteH2:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Route"
+    DeletionPolicy: "Delete"
+    Properties:
+      NatGatewayId:
+        Ref: "EC2NatGateway1"
+      RouteTableId:
+        Ref: "EC2RouteTableBy"
+      DestinationCidrBlock: "0.0.0.0/0"
+  EC2SubnetPrivate2:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Subnet"
+    DeletionPolicy: "Delete"
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      MapPublicIpOnLaunch: false
+      EnableDns64: false
+      VpcId:
+        Ref: "EC2VPC"
+      AvailabilityZoneId: "use1-az6"
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsARecord: false
+        HostnameType: "ip-name"
+        EnableResourceNameDnsAAAARecord: false
+      CidrBlock: "10.16.0.192/26"
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt 'EC2VPC.Ipv6CidrBlocks'], 256, 64]]
+      Ipv6Native: false
+      Tags:
+      - Value: "capstone-subnet-private2-us-east-1b"
+        Key: "Name"
+  IAMRoleRdsmonitoringrole:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: "Delete"
+    Properties:
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+      MaxSessionDuration: 3600
+      RoleName: "rds-monitoring-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Action: "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            Service: "monitoring.rds.amazonaws.com"
+          Sid: ""
+  EC2VPCEndpointPc:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.ssm"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-ssm"
+        Key: "Name"
+  IAMManagedPolicyPolicyCapstoneLogsCreateLogGroupPolicy:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Delete"
+    Properties:
+      ManagedPolicyName: "CapstoneLogsCreateLogGroupPolicy"
+      Path: "/"
+      Description: ""
+      Groups: []
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: "*"
+          Action:
+          - "logs:CreateLogGroup"
+          Effect: "Allow"
+          Sid: "VisualEditor0"
+      Users: []
+  IAMRoleCapstoneECSTaskLaunchRole:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: "Delete"
+    Properties:
+      Path: "/"
+      ManagedPolicyArns:
+      - !Sub "arn:aws:iam::${MyAccountNumber}:policy/GetParameterSecrets"
+      - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      - !Sub "arn:aws:iam::${MyAccountNumber}:policy/CapstoneLogsCreateLogGroupPolicy"
+      MaxSessionDuration: 3600
+      RoleName: "CapstoneECSTaskLaunchRole"
+      Description: "Allows ECS tasks to get parameters from Parameter Store and to\
+        \ authorize and pull container images from ECR."
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Action: "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            Service: "ecs-tasks.amazonaws.com"
+          Sid: ""
+    DependsOn:
+      - IAMManagedPolicyPolicyGetParameterSecrets
+      - IAMManagedPolicyPolicyCapstoneLogsCreateLogGroupPolicy
+  EC2SecurityGroupRDSEC21:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "Security group attached to capstone-db to allow EC2 instances\
+        \ with specific security groups attached to connect to the database. Modification\
+        \ could lead to connection loss."
+      GroupName: "rds-ec2-1"
+      VpcId:
+        Ref: "EC2VPC"
+      SecurityGroupIngress:
+      - IpProtocol: "tcp"
+        Description: "Rule to allow connections from EC2 instances with EC2SecurityGroupEC2RDS1\
+          \ attached"
+        FromPort: 5432
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+            - "EC2SecurityGroupEC2RDS1"
+            - "GroupId"
+        ToPort: 5432
+        SourceSecurityGroupOwnerId: !Ref MyAccountNumber
+  EC2SubnetNetworkAclAssociation:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      NetworkAclId:
+        Ref: "EC2NetworkAcl"
+      SubnetId:
+        Ref: "EC2SubnetPrivate2"
+  EC2NatGateway1:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::NatGateway"
+    DeletionPolicy: "Delete"
+    Properties:
+      ConnectivityType: "public"
+      AllocationId:
+        Fn::GetAtt:
+        - "EC2EIP3422516571"
+        - "AllocationId"
+      SubnetId:
+        Ref: "EC2SubnetPublic1"
+      Tags:
+      - Value: "capstone-nat-public1-us-east-1a"
+        Key: "Name"
+  EC2SubnetPrivate1:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Subnet"
+    DeletionPolicy: "Delete"
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      MapPublicIpOnLaunch: false
+      EnableDns64: false
+      VpcId:
+        Ref: "EC2VPC"
+      AvailabilityZoneId: "use1-az4"
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsARecord: false
+        HostnameType: "ip-name"
+        EnableResourceNameDnsAAAARecord: false
+      CidrBlock: "10.16.0.128/26"
+      Ipv6Native: false
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [2, !Cidr [!Select [0, !GetAtt 'EC2VPC.Ipv6CidrBlocks'], 256, 64]]
+      Ipv6Native: false
+      Tags:
+      - Value: "capstone-subnet-private1-us-east-1a"
+        Key: "Name"
+  EC2NatGateway2:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::NatGateway"
+    DeletionPolicy: "Delete"
+    Properties:
+      ConnectivityType: "public"
+      AllocationId:
+        Fn::GetAtt:
+        - "EC2EIP132195827"
+        - "AllocationId"
+      SubnetId:
+        Ref: "EC2SubnetPublic2"
+      Tags:
+      - Value: "capstone-nat-public2-us-east-1b"
+        Key: "Name"
+  EC2SubnetNetworkAclAssociationWj:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      NetworkAclId:
+        Ref: "EC2NetworkAcl"
+      SubnetId:
+        Ref: "EC2SubnetPrivate1"
+  EC2SubnetNetworkAclAssociationGY:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      NetworkAclId:
+        Ref: "EC2NetworkAcl"
+      SubnetId:
+        Ref: "EC2SubnetPublic2"
+  NewKeyPair:
+    Type: 'AWS::EC2::KeyPair'
+    Properties:
+      KeyName: EC2BastionKeyPair
+  EC2Instance:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Instance"
+    DeletionPolicy: "Delete"
+    Properties:
+      Tenancy: "default"
+      KeyName: !Ref NewKeyPair
+      BlockDeviceMappings:
+      - Ebs:
+          VolumeType: "gp3"
+          Iops: 3000
+          VolumeSize: 8
+          Encrypted: false
+          DeleteOnTermination: true
+        DeviceName: "/dev/xvda"
+      AvailabilityZone: "us-east-1a"
+      PrivateDnsNameOptions:
+        EnableResourceNameDnsARecord: false
+        HostnameType: "ip-name"
+        EnableResourceNameDnsAAAARecord: false
+      SubnetId:
+        Ref: "EC2SubnetPublic1"
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupUserBastion
+      - !Ref EC2SecurityGroupEC2RDS1
+      EbsOptimized: false
+      DisableApiTermination: false
+      SourceDestCheck: true
+      VpcId: !Ref EC2VPC
+      ImageId: "ami-02457590d33d576c3"
+      InstanceType: "t2.micro"
+      Monitoring: false
+      Tags:
+      - Value: "ec2-bastion"
+        Key: "Name"
+  EC2SecurityGroupVPCIngressEgress:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "Created by RDS management console"
+      GroupName: "capstone-vpc-sg"
+      VpcId:
+        Ref: "EC2VPC"
+      SecurityGroupIngress:
+      - CidrIp: !Ref MyIPAddressCIDR
+        IpProtocol: "tcp"
+        FromPort: 5432
+        ToPort: 5432
+      SecurityGroupEgress:
+      - CidrIp: "0.0.0.0/0"
+        IpProtocol: "-1"
+        FromPort: -1
+        ToPort: -1
+      - CidrIpv6: "::/0"
+        IpProtocol: "-1"
+        FromPort: -1
+        ToPort: -1
+  ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    DeletionPolicy: "Delete"
+    DependsOn:
+    - EC2SubnetPrivate1
+    - EC2SubnetPrivate2
+    Properties:
+      IpAddressType: "ipv4"
+      HealthCheckIntervalSeconds: 60
+      Matcher:
+        HttpCode: "200"
+      HealthCheckPath: "/"
+      Port: 8000
+      Targets:
+      - AvailabilityZone: "us-east-1a"
+        Port: 8000
+        Id: "10.16.0.159"
+      - AvailabilityZone: "us-east-1b"
+        Port: 8000
+        Id: "10.16.0.251"
+      HealthCheckEnabled: true
+      ProtocolVersion: "HTTP1"
+      UnhealthyThresholdCount: 3
+      HealthCheckTimeoutSeconds: 5
+      Name: "CapstoneECSTG3"
+      VpcId:
+        Ref: "EC2VPC"
+      HealthyThresholdCount: 5
+      HealthCheckProtocol: "HTTP"
+      TargetGroupAttributes:
+      - Value: "lb_cookie"
+        Key: "stickiness.type"
+      - Value: "86400"
+        Key: "stickiness.app_cookie.duration_seconds"
+      - Value: "1"
+        Key: "target_group_health.dns_failover.minimum_healthy_targets.count"
+      - Value: "use_load_balancer_configuration"
+        Key: "load_balancing.cross_zone.enabled"
+      - Value: "86400"
+        Key: "stickiness.lb_cookie.duration_seconds"
+      - Value: "off"
+        Key: "target_group_health.dns_failover.minimum_healthy_targets.percentage"
+      - Value: "false"
+        Key: "stickiness.enabled"
+      - Value: "off"
+        Key: "target_group_health.unhealthy_state_routing.minimum_healthy_targets.percentage"
+      - Value: "0"
+        Key: "slow_start.duration_seconds"
+      - Value: "300"
+        Key: "deregistration_delay.timeout_seconds"
+      - Value: "1"
+        Key: "target_group_health.unhealthy_state_routing.minimum_healthy_targets.count"
+      - Value: "off"
+        Key: "load_balancing.algorithm.anomaly_mitigation"
+      - Value: ""
+        Key: "stickiness.app_cookie.cookie_name"
+      - Value: "round_robin"
+        Key: "load_balancing.algorithm.type"
+      TargetType: "ip"
+      HealthCheckPort: "traffic-port"
+      Protocol: "HTTP"
+      Tags: []
+  EC2Route:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Route"
+    DeletionPolicy: "Delete"
+    Properties:
+      NatGatewayId:
+        Ref: "EC2NatGateway2"
+      RouteTableId:
+        Ref: "EC2RouteTable"
+      DestinationCidrBlock: "0.0.0.0/0"
+  EC2SubnetRouteTableAssociationEn:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      RouteTableId:
+        Ref: "EC2RouteTable"
+      SubnetId:
+        Ref: "EC2SubnetPrivate2"
+  EC2RouteTableGr:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::RouteTable"
+    DeletionPolicy: "Delete"
+    Properties:
+      VpcId:
+        Ref: "EC2VPC"
+      Tags:
+      - Value: "capstone-rtb-public"
+        Key: "Name"
+  EC2VPCEndpointXB:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.kms"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-kms"
+        Key: "Name"
+  EC2VPCEndpointWV:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.logs"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-logs"
+        Key: "Name"
+  RDSDBInstance:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::RDS::DBInstance"
+    DeletionPolicy: "Delete"
+    DependsOn:
+    - EC2SubnetPrivate1
+    - EC2SubnetPrivate2
+    Properties:
+      DatabaseInsightsMode: "standard"
+      StorageEncrypted: true
+      AssociatedRoles: []
+      Port: "5432"
+      ProcessorFeatures: []
+      PreferredBackupWindow: "07:06-07:36"
+      MonitoringInterval: 0
+      DBParameterGroupName: "default.postgres16"
+      NetworkType: "IPV4"
+      DedicatedLogVolume: false
+      CopyTagsToSnapshot: true
+      MultiAZ: false
+      Engine: "postgres"
+      Tags: []
+      EngineLifecycleSupport: "open-source-rds-extended-support-disabled"
+      LicenseModel: "postgresql-license"
+      EngineVersion: "16.9"
+      StorageType: "gp3"
+      DBInstanceClass: "db.t4g.micro"
+      PerformanceInsightsRetentionPeriod: 7
+      AvailabilityZone: "us-east-1a"
+      OptionGroupName: "default:postgres-16"
+      PreferredMaintenanceWindow: "tue:03:19-tue:03:49"
+      EnablePerformanceInsights: true
+      AutoMinorVersionUpgrade: true
+      DBSubnetGroupName: "capstone-db-subnet-group"
+      DeletionProtection: false
+      DBInstanceIdentifier: "capstone-db"
+      AllocatedStorage: "20"
+      CACertificateIdentifier: "rds-ca-rsa2048-g1"
+      ManageMasterUserPassword: false
+      MasterUserSecret: {}
+      VPCSecurityGroups:
+      - Fn::GetAtt:
+        - "EC2SecurityGroupRDSEC21"
+        - "GroupId"
+      - Fn::GetAtt:
+        - "EC2SecurityGroupVPCIngressEgress"
+        - "GroupId"
+      DBSecurityGroups: []
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      MaxAllocatedStorage: 1000
+      DBName: !Ref DBName
+      EnableIAMDatabaseAuthentication: true
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 0
+      EnableCloudwatchLogsExports: []
+  EC2SubnetPublic1:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Subnet"
+    DeletionPolicy: "Delete"
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      MapPublicIpOnLaunch: false
+      EnableDns64: false
+      VpcId:
+        Ref: "EC2VPC"
+      AvailabilityZoneId: "use1-az4"
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsARecord: false
+        HostnameType: "ip-name"
+        EnableResourceNameDnsAAAARecord: false
+      CidrBlock: "10.16.0.0/26"
+      Ipv6Native: false
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt 'EC2VPC.Ipv6CidrBlocks'], 256, 64]]
+      Ipv6Native: false
+      Tags:
+      - Value: "capstone-subnet-public1-us-east-1a"
+        Key: "Name"
+  EC2VPCDHCPOptionsAssociation:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      VpcId:
+        Ref: "EC2VPC"
+      DhcpOptionsId: "dopt-09a2844160ff8cec1"
+  EC2SecurityGroupSubnetVPCEndpoint:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "Allows traffic to the VPC Endpoint from the private subnets\
+        \ in the VPC CIDR block"
+      GroupName: "capstone-subnet-to-vpc-endpoint-sg"
+      VpcId:
+        Ref: "EC2VPC"
+      SecurityGroupIngress:
+      - CidrIp: "10.16.0.128/25"
+        IpProtocol: "tcp"
+        Description: "Image Pull Ingress HTTP"
+        FromPort: 80
+        ToPort: 80
+      - CidrIp: "10.16.0.128/25"
+        IpProtocol: "tcp"
+        Description: "DNSTCP"
+        FromPort: 53
+        ToPort: 53
+      - CidrIp: "10.16.0.128/25"
+        IpProtocol: "udp"
+        Description: "DNSUDP"
+        FromPort: 53
+        ToPort: 53
+      - CidrIp: "10.16.0.128/25"
+        IpProtocol: "tcp"
+        Description: "Image Pull Ingress HTTPS"
+        FromPort: 443
+        ToPort: 443
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: CapstoneFargateCluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 1
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
+  ECSService:
+    Type: 'AWS::ECS::Service'
+    DependsOn:
+    - ECSTaskDefinitionTaskdefinitioncapstonefargate6
+    Properties:
+      ServiceName: capstone-fargate-service
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LoadBalancers:
+        - ContainerName: "fargate-app"
+          ContainerPort: 8000
+          LoadBalancerName:
+            Ref: ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f
+          TargetGroupArn:
+            Ref: ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref EC2SecurityGroupEC2RDS1
+          Subnets:
+            - !Ref EC2SubnetPrivate1
+            - !Ref EC2SubnetPrivate2
+      TaskDefinition: !Ref ECSTaskDefinitionTaskdefinitioncapstonefargate6
+  ECSTaskDefinitionTaskdefinitioncapstonefargate6:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ECS::TaskDefinition"
+    DeletionPolicy: "Delete"
+    DependsOn:
+    - ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f
+    Properties:
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - "IAMRoleCapstoneECSTaskLaunchRole"
+        - "Arn"
+      Volumes: []
+      InferenceAccelerators: []
+      Memory: "512"
+      PlacementConstraints: []
+      ContainerDefinitions:
+      - ExtraHosts: []
+        Secrets:
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/DBUsername"
+          Name: "DBUsername"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/DBPassword"
+          Name: "DBPassword"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/DATABASE_URL"
+          Name: "DATABASE_URL"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/EXCITED"
+          Name: "EXCITED"
+        VolumesFrom: []
+        Cpu: 0
+        EntryPoint: []
+        DnsServers: []
+        Image: !Sub "${MyAccountNumber}.dkr.ecr.us-east-1.amazonaws.com/capstone-repository:latest"
+        Essential: true
+        LogConfiguration:
+          SecretOptions: []
+          Options:
+            awslogs-group: "awslogs-capstone"
+            awslogs-create-group: "true"
+            awslogs-region: "us-east-1"
+            awslogs-stream-prefix: "awslogs-capstone-stream"
+          LogDriver: "awslogs"
+        ResourceRequirements: []
+        EnvironmentFiles: []
+        Name: "fargate-app"
+        MountPoints: []
+        DependsOn: []
+        DockerLabels: {}
+        PortMappings:
+        - ContainerPort: 8000
+          Protocol: "tcp"
+          HostPort: 8000
+        DockerSecurityOptions: []
+        SystemControls: []
+        Command: []
+        DnsSearchDomains: []
+        Environment: []
+        Links: []
+        CredentialSpecs: []
+        Ulimits: []
+      Family: "capstone-fargate"
+      Cpu: "256"
+      RequiresCompatibilities:
+      - "FARGATE"
+      NetworkMode: "awsvpc"
+      Tags: []
+  EC2InternetGateway:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::InternetGateway"
+    DeletionPolicy: "Delete"
+    Properties:
+      Tags:
+      - Value: "capstone-igw"
+        Key: "Name"
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref EC2InternetGateway
+      VpcId: !Ref EC2VPC
+  EC2VPCEndpointECRDKR:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.ecr.dkr"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-ecr"
+        Key: "Name"
+  EC2SecurityGroupEC2RDS1:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "Security group attached to instances to securely connect\
+        \ to capstone-db. Modification could lead to connection loss."
+      GroupName: "ec2-rds-1"
+      VpcId:
+        Ref: "EC2VPC"
+  EC2SecurityGroupEgressECSRDS:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      IpProtocol: "tcp"
+      DestinationSecurityGroupId: !Ref EC2SecurityGroupRDSEC21
+      Description: "Rule to allow connections to capstone-db from any instances\
+        \ this security group is attached to"
+      FromPort: 5432
+      ToPort: 5432
+  EC2SecurityGroupEgressECSInt:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      Description: "Rule to allow connections to Amazon Services over VPCE Private DNS"
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: "tcp"
+      FromPort: 443
+      ToPort: 443
+  EC2SecurityGroupEgressECSVPCE:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      Description: "Rule to allow connections from ECS tasks to VPC Endpoints in subnet"
+      IpProtocol: "tcp"
+      DestinationSecurityGroupId: !Ref "EC2SecurityGroupSubnetVPCEndpoint"
+      FromPort: 443
+      ToPort: 443
+  EC2SecurityGroupIngressALBECS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      SourceSecurityGroupId: !Ref EC2SecurityGroupCapstoneALBSG
+      IpProtocol: "-1"
+      FromPort: -1
+      ToPort: -1
+      SourceSecurityGroupOwnerId: !Ref MyAccountNumber      
+  EC2SubnetRouteTableAssociation:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      RouteTableId:
+        Ref: "EC2RouteTableGr"
+      SubnetId:
+        Ref: "EC2SubnetPublic1"
+  EC2NetworkAcl:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::NetworkAcl"
+    DeletionPolicy: "Delete"
+    Properties:
+      VpcId:
+        Ref: "EC2VPC"
+      Tags: []
+  LogsLogGroupAwslogscapstone:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::Logs::LogGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      FieldIndexPolicies: []
+      LogGroupClass: "STANDARD"
+      RetentionInDays: 7
+      LogGroupName: "awslogs-capstone"
+      DataProtectionPolicy: {}
+  EC2SubnetNetworkAclAssociationUH:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      NetworkAclId:
+        Ref: "EC2NetworkAcl"
+      SubnetId:
+        Ref: "EC2SubnetPublic1"
+  EC2VPCEndpoint:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.ecr.api"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-ecr-api"
+        Key: "Name"
+  EC2SecurityGroupUserBastion:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "ec2-bastion-sg created 2025-06-06T05:29:13.246Z"
+      GroupName: "ec2-bastion-sg"
+      VpcId:
+        Ref: "EC2VPC"
+      SecurityGroupIngress:
+      - CidrIp: !Ref MyIPAddressCIDR
+        IpProtocol: "tcp"
+        Description: "sg-rule-admin-inbound-ssh"
+        FromPort: 22
+        ToPort: 22
+      SecurityGroupEgress:
+      - CidrIp: "0.0.0.0/0"
+        IpProtocol: "-1"
+        FromPort: -1
+        ToPort: -1
+      - CidrIpv6: "::/0"
+        IpProtocol: "-1"
+        FromPort: -1
+        ToPort: -1
+  EC2VPCEndpointVj:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: false
+      IpAddressType: "not-specified"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "not-specified"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds: []
+      SubnetIds: []
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds:
+      - Ref: "EC2RouteTableBy"
+      - Ref: "EC2RouteTable"
+      ServiceName: "com.amazonaws.us-east-1.s3"
+      PolicyDocument:
+        Version: "2008-10-17"
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Gateway"
+      Tags:
+      - Value: "capstone-vpce-s3gw"
+        Key: "Name"
+  EC2SubnetPublic2:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Subnet"
+    DeletionPolicy: "Delete"
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      MapPublicIpOnLaunch: false
+      EnableDns64: false
+      VpcId:
+        Ref: "EC2VPC"
+      AvailabilityZoneId: "use1-az6"
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsARecord: false
+        HostnameType: "ip-name"
+        EnableResourceNameDnsAAAARecord: false
+      CidrBlock: "10.16.0.64/26"
+      Ipv6Native: false
+      AssignIpv6AddressOnCreation: true
+      Ipv6CidrBlock: !Select [4, !Cidr [!Select [0, !GetAtt 'EC2VPC.Ipv6CidrBlocks'], 256, 64]]
+      Ipv6Native: false
+      Tags:
+      - Value: "capstone-subnet-public2-us-east-1b"
+        Key: "Name"
+  EC2SecurityGroupCapstoneALBSG:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SecurityGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      GroupDescription: "Allows inbound traffic from internet"
+      GroupName: "CapstoneALBSG"
+      VpcId:
+        Ref: "EC2VPC"
+      SecurityGroupIngress:
+      - CidrIp: "0.0.0.0/0"
+        IpProtocol: "tcp"
+        FromPort: 443
+        ToPort: 443
+      - CidrIpv6: "::/0"
+        IpProtocol: "tcp"
+        FromPort: 443
+        ToPort: 443
+  EC2SecurityGroupEgressALBECS:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EC2SecurityGroupCapstoneALBSG
+      DestinationSecurityGroupId: !Ref EC2SecurityGroupEC2RDS1
+      IpProtocol: "-1"
+      Description: "Allow traffic to flow to ecs service"
+      FromPort: -1
+      ToPort: -1
+  ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    DeletionPolicy: "Delete"
+    DependsOn:
+    - EC2SubnetPublic1
+    - EC2SubnetPublic2
+    Properties:
+      IpAddressType: "ipv4"
+      SecurityGroups:
+      - !Ref EC2SecurityGroupCapstoneALBSG
+      LoadBalancerAttributes:
+      - Value: "append"
+        Key: "routing.http.xff_header_processing.mode"
+      - Value: "true"
+        Key: "routing.http2.enabled"
+      - Value: "false"
+        Key: "waf.fail_open.enabled"
+      - Value: "false"
+        Key: "access_logs.s3.enabled"
+      - Value: "false"
+        Key: "zonal_shift.config.enabled"
+      - Value: "defensive"
+        Key: "routing.http.desync_mitigation_mode"
+      - Value: "false"
+        Key: "routing.http.x_amzn_tls_version_and_cipher_suite.enabled"
+      - Value: "false"
+        Key: "routing.http.preserve_host_header.enabled"
+      - Value: "true"
+        Key: "load_balancing.cross_zone.enabled"
+      - Value: "false"
+        Key: "routing.http.xff_client_port.enabled"
+      - Value: "false"
+        Key: "deletion_protection.enabled"
+      - Value: "3600"
+        Key: "client_keep_alive.seconds"
+      - Value: "false"
+        Key: "routing.http.drop_invalid_header_fields.enabled"
+      - Value: "false"
+        Key: "connection_logs.s3.enabled"
+      - Value: "60"
+        Key: "idle_timeout.timeout_seconds"
+      Type: "application"
+      Scheme: "internet-facing"
+      EnablePrefixForIpv6SourceNat: "off"
+      EnforceSecurityGroupInboundRulesOnPrivateLinkTraffic: ""
+      Tags: []
+      Name: "CapstoneECSALB3"
+      SubnetMappings:
+      - SubnetId:
+          Ref: "EC2SubnetPublic1"
+      - SubnetId:
+          Ref: "EC2SubnetPublic2"
+  EC2EIP132195827:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::EIP"
+    DeletionPolicy: "Delete"
+    Properties:
+      PublicIpv4Pool: "amazon"
+      Domain: "vpc"
+      Tags:
+      - Value: "capstone-eip-us-east-1b"
+        Key: "Name"
+      NetworkBorderGroup: "us-east-1"
+  EC2VPCEndpointFG:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.ssmmessages"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-ssmmessages"
+        Key: "Name"
+  EC2EIP3422516571:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::EIP"
+    DeletionPolicy: "Delete"
+    Properties:
+      PublicIpv4Pool: "amazon"
+      Domain: "vpc"
+      Tags:
+      - Value: "capstone-eip-us-east-1a"
+        Key: "Name"
+      NetworkBorderGroup: "us-east-1"
+  EC2RouteTableBy:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::RouteTable"
+    DeletionPolicy: "Delete"
+    Properties:
+      VpcId:
+        Ref: "EC2VPC"
+      Tags:
+      - Value: "capstone-rtb-private1-us-east-1a"
+        Key: "Name"
+  EC2SubnetRouteTableAssociationXh:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      RouteTableId:
+        Ref: "EC2RouteTableBy"
+      SubnetId:
+        Ref: "EC2SubnetPrivate1"
+  EC2SubnetRouteTableAssociationLY:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    DeletionPolicy: "Delete"
+    Properties:
+      RouteTableId:
+        Ref: "EC2RouteTableGr"
+      SubnetId:
+        Ref: "EC2SubnetPublic2"
+  EC2VPCEndpointN6:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPCEndpoint"
+    DeletionPolicy: "Delete"
+    Properties:
+      PrivateDnsEnabled: true
+      IpAddressType: "ipv4"
+      ServiceRegion: "us-east-1"
+      DnsOptions:
+        PrivateDnsOnlyForInboundResolverEndpoint: "NotSpecified"
+        DnsRecordIpType: "ipv4"
+      ResourceConfigurationArn: ""
+      SecurityGroupIds:
+      - !Ref EC2SecurityGroupSubnetVPCEndpoint
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate2"
+      - Ref: "EC2SubnetPrivate1"
+      ServiceNetworkArn: ""
+      VpcId:
+        Ref: "EC2VPC"
+      RouteTableIds: []
+      ServiceName: "com.amazonaws.us-east-1.secretsmanager"
+      PolicyDocument:
+        Statement:
+        - Resource: "*"
+          Action: "*"
+          Effect: "Allow"
+          Principal: "*"
+      VpcEndpointType: "Interface"
+      Tags:
+      - Value: "capstone-vpce-secrets-mgr"
+        Key: "Name"
+  ElasticLoadBalancingV2ListenerListenerappCapstoneECSALB3f531d569f14ff05f338fbc32135f1c19:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    DeletionPolicy: "Delete"
+    Properties:
+      MutualAuthentication:
+        Mode: "off"
+      ListenerAttributes:
+      - Value: ""
+        Key: "routing.http.request.x_amzn_tls_cipher_suite.header_name"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert_serial_number.header_name"
+      - Value: ""
+        Key: "routing.http.response.access_control_allow_origin.header_value"
+      - Value: ""
+        Key: "routing.http.response.content_security_policy.header_value"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert_leaf.header_name"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_tls_version.header_name"
+      - Value: "true"
+        Key: "routing.http.response.server.enabled"
+      - Value: ""
+        Key: "routing.http.response.access_control_allow_headers.header_value"
+      - Value: ""
+        Key: "routing.http.response.x_frame_options.header_value"
+      - Value: ""
+        Key: "routing.http.response.access_control_allow_methods.header_value"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert_issuer.header_name"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert.header_name"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert_validity.header_name"
+      - Value: ""
+        Key: "routing.http.response.access_control_allow_credentials.header_value"
+      - Value: ""
+        Key: "routing.http.request.x_amzn_mtls_clientcert_subject.header_name"
+      - Value: ""
+        Key: "routing.http.response.x_content_type_options.header_value"
+      - Value: ""
+        Key: "routing.http.response.access_control_expose_headers.header_value"
+      - Value: ""
+        Key: "routing.http.response.strict_transport_security.header_value"
+      - Value: ""
+        Key: "routing.http.response.access_control_max_age.header_value"
+      SslPolicy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+      LoadBalancerArn:
+        Ref: "ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f"
+      DefaultActions:
+      - TargetGroupArn:
+          Ref: "ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19"
+        Type: "forward"
+        ForwardConfig:
+          TargetGroupStickinessConfig:
+            Enabled: false
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: "ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19"
+            Weight: 1
+      Port: 443
+      Certificates:
+      - CertificateArn: !Sub "arn:aws:acm:us-east-1:${MyAccountNumber}:certificate/feb0d556-b1d6-4b39-8287-78e95533a690"
+      Protocol: "HTTPS"
+  EC2VPC:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPC"
+    DeletionPolicy: "Delete"
+    Properties:
+      CidrBlock: "10.16.0.0/24"
+      EnableDnsSupport: true
+      InstanceTenancy: "default"
+      EnableDnsHostnames: true
+      Tags:
+      - Value: "capstone-vpc"
+        Key: "Name"
+  VpcCidrBlockIpv6:
+    Type: "AWS::EC2::VPCCidrBlock"
+    Properties:
+      VpcId: !Ref "EC2VPC"
+      AmazonProvidedIpv6CidrBlock: true
+  EC2RouteTable:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::RouteTable"
+    DeletionPolicy: "Delete"
+    Properties:
+      VpcId:
+        Ref: "EC2VPC"
+      Tags:
+      - Value: "capstone-rtb-private2-us-east-1b"
+        Key: "Name"
+  IAMManagedPolicyPolicyCapstoneECRAccessPolicy:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Delete"
+    Properties:
+      ManagedPolicyName: "CapstoneECRAccessPolicy"
+      Path: "/"
+      Description: "Allows role to get an auth token for ECR and pull an image from\
+        \ a repository."
+      Groups: []
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: !Sub "arn:aws:ecr:us-east-1:${MyAccountNumber}:repository/*"
+          Action:
+          - "ecr:GetDownloadUrlForLayer"
+          - "ecr:BatchGetImage"
+          - "ecr:BatchCheckLayerAvailability"
+          Effect: "Allow"
+          Sid: "VisualEditor0"
+        - Resource: "*"
+          Action: "ecr:GetAuthorizationToken"
+          Effect: "Allow"
+          Sid: "VisualEditor1"
+      Roles: []
+      Users: []
+  IAMManagedPolicyPolicyGetParameterSecrets:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::ManagedPolicy"
+    DeletionPolicy: "Delete"
+    Properties:
+      ManagedPolicyName: "GetParameterSecrets"
+      Path: "/"
+      Description: "Allows a service to get and decrypt secure parameters from Secrets\
+        \ Manager and Systems Manager"
+      Groups: []
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource:
+          - !Sub "arn:aws:kms:us-east-1:${MyAccountNumber}:key/*"
+          - !Sub "arn:aws:secretsmanager:us-east-1:${MyAccountNumber}:secret:*"
+          - !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/*"
+          Action:
+          - "kms:Decrypt"
+          - "secretsmanager:GetSecretValue"
+          - "ssm:GetParameters"
+          Effect: "Allow"
+          Sid: "VisualEditor0"
+      Users: []
+  RDSDBSubnetGroupCapstonedbsubnetgroup:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::RDS::DBSubnetGroup"
+    DeletionPolicy: "Delete"
+    Properties:
+      DBSubnetGroupDescription: "Subnet Group for PostgresQL DB"
+      SubnetIds:
+      - Ref: "EC2SubnetPrivate1"
+      - Ref: "EC2SubnetPrivate2"
+      DBSubnetGroupName: "capstone-db-subnet-group"
+
