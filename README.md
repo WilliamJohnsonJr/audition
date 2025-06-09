@@ -12,10 +12,23 @@ Hosting: AWS RDS (DB), ECS Fargate (API), and S3 Static-Site Hosting (Frontend).
 
 See the READMEs in the `frontend` and `backend` directory for specific information on running the Frontend and Backend.
 
+## AWS Architecture Overview
+- API Entrypoint at an Application Load Balancer via a custom domain with an A Record alias pointing at the ALB in Route53.
+- ALB connects to the ECS tasks running in Fargate in the private subnets of a new (small!) VPC.
+- ECS task(s) connect to the PostgresQL DB in RDS.
+- EC2 Bastion Host is available to SSH into the EC2 Instance and interact with the RDS database from the terminal.
+- RDS deployment is single instance with no backups (just for test projects, not for prod)
+- Communication between ECS, RDS, and ALB is inside the VPC and over HTTP/TCP (for production, you'd probably want SSL even inside the VPC)
+- ECS and RDS are hosted in private subnets, and all communication from ECS to AWS Services (logs, S3, etc.) happens over VPC Endpoints with Private DNS enabled. This means that no traffic goes from ECS to AWS Services over the public internet. It stays within the VPC. It also does not travel through NAT Gateways (which makes container image pulls from S3, through ECR, free).
+
+In Summary: this template generates a small VPC with what I consider to be basic best practices (logs enabled, entrypoint is an ALB, services and DB are in private subnets and isolated from the public internet).
+
+
 ## Requirements to deploy on AWS
 ### Prerequisites
-- A registered domain name to use in your Application Load Balancer SSL certificate(s) and for hosting the Frontend on S3.
-- A private ECR repository named: "capstone-repository"
+- A registered domain name in Route53 to use in your Application Load Balancer SSL certificate(s) and for hosting the Frontend on S3.
+- (after deployment) Create an A record alias to the API's ALB at `api.your-domain.example`.
+- A private ECR repository named: "capstone-repository" containing your app image with a `:latest` tag.
 - An open 10.16.0.0/24 CIDR block among your AWS VPCs.
 - Two SSL Certificates from Amazon Certificate Manager (one for api.{YOUR_DOMAIN}, one for Frontend).
 - An S3 Bucket to hold the initial CloudFormation template
@@ -26,7 +39,7 @@ See the READMEs in the `frontend` and `backend` directory for specific informati
     - DBPassword
     - DATABASE_URL
     - EXCITED
-- Everything else is included in the CloudFormation template, provided that you pass in the correct environment variables (I recommend doing that through Parameter Store).
+- Everything else is included in the CloudFormation template, provided that you pass in the correct environment variables and parameters when running `aws cloudformation create-stack` (I recommend doing that through Parameter Store, but this is an example app so I feed some things in through the cloudformation terminal command as Parameters below).
 ### Steps
 (WIP)
 - Deploy the initial CloudFormation Stack to bootstrap necessary resources and get the services, etc. running. Example CLI command:
@@ -40,7 +53,10 @@ aws cloudformation create-stack --stack-name capstone-stack --template-url https
 - SSL communication with the DB is not turned on. I'd recommend turning that on in production.
 - There is no Replica or Backup for the PostgresQL DB. You would want those in a production app.
 - SSL Terminates at the ALB when calling the API, then HTTP is used to go from the ALB to the API app. In production, you'd probably want to encrypt this.
-- An EC2 Bastion Host is provided in order to access the PostgresQL DB in RDS from your local terminal. The KeyPair to access it is created by the CFN template. You can find the private key in your account in AWS Systems Manager Parameter Store after running the template at `/ec2/keypair/EC2BastionKeyPair`
+- An EC2 Bastion Host is provided in order to access the PostgresQL DB in RDS from your local terminal. The KeyPair to access it is created by the CFN template. You can find the private key in your account in AWS Systems Manager Parameter Store after running the template at `/ec2/keypair/key-05abb699beEXAMPLE`
+    - Download the Private Key and store it in a .pem file
+    - Connect to the EC2 Bastion Host by running the following command:
+    - `ssh -i location_of_pem_file ec2-user@ec2-instance-public-dns-name`
 - NAT Gateways are used for all traffic outbound to the public internet (best practice).
 - Default KMS keys are used for all encryption (PostgresQL, ACM, Parameter Store secrets).
 - This AWS architecture is relatively cheap, but there are costs associated with running this stack. Namely:

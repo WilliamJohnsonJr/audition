@@ -1,7 +1,7 @@
 Parameters:
   MyUsername:
     Type: String
-    Default: iamadmin
+    Default: admin
   MyIPAddressCIDR:
     Type: String
     NoEcho: True
@@ -17,8 +17,20 @@ Parameters:
   DBName:
     Type: String
     NoEcho: True
-    Default: "capstone"
+    Default: "postgres"
 Resources:
+  EC2VPC:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::VPC"
+    DeletionPolicy: "Delete"
+    Properties:
+      CidrBlock: "10.16.0.0/24"
+      EnableDnsSupport: true
+      InstanceTenancy: "default"
+      EnableDnsHostnames: true
+      Tags:
+      - Value: "capstone-vpc"
+        Key: "Name"
   EC2RouteH2:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::Route"
@@ -27,7 +39,7 @@ Resources:
       NatGatewayId:
         Ref: "EC2NatGateway1"
       RouteTableId:
-        Ref: "EC2RouteTableBy"
+        Ref: "EC2RouteTablePrivate1"
       DestinationCidrBlock: "0.0.0.0/0"
   EC2SubnetPrivate2:
     UpdateReplacePolicy: "Delete"
@@ -144,7 +156,7 @@ Resources:
     DependsOn:
       - IAMManagedPolicyPolicyGetParameterSecrets
       - IAMManagedPolicyPolicyCapstoneLogsCreateLogGroupPolicy
-  EC2SecurityGroupRDSEC21:
+  EC2SecurityGroupRDSECS1:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::SecurityGroup"
     DeletionPolicy: "Delete"
@@ -157,24 +169,15 @@ Resources:
         Ref: "EC2VPC"
       SecurityGroupIngress:
       - IpProtocol: "tcp"
-        Description: "Rule to allow connections from EC2 instances with EC2SecurityGroupEC2RDS1\
+        Description: "Rule to allow connections from EC2 instances with EC2SecurityGroupECSRDS1\
           \ attached"
         FromPort: 5432
         SourceSecurityGroupId:
           Fn::GetAtt:
-            - "EC2SecurityGroupEC2RDS1"
+            - "EC2SecurityGroupECSRDS1"
             - "GroupId"
         ToPort: 5432
         SourceSecurityGroupOwnerId: !Ref MyAccountNumber
-  EC2SubnetNetworkAclAssociation:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::SubnetNetworkAclAssociation"
-    DeletionPolicy: "Delete"
-    Properties:
-      NetworkAclId:
-        Ref: "EC2NetworkAcl"
-      SubnetId:
-        Ref: "EC2SubnetPrivate2"
   EC2NatGateway1:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::NatGateway"
@@ -228,24 +231,82 @@ Resources:
       Tags:
       - Value: "capstone-nat-public2-us-east-1b"
         Key: "Name"
-  EC2SubnetNetworkAclAssociationWj:
+  EC2NetworkAcl:
     UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Type: "AWS::EC2::NetworkAcl"
     DeletionPolicy: "Delete"
     Properties:
-      NetworkAclId:
-        Ref: "EC2NetworkAcl"
-      SubnetId:
-        Ref: "EC2SubnetPrivate1"
-  EC2SubnetNetworkAclAssociationGY:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::SubnetNetworkAclAssociation"
-    DeletionPolicy: "Delete"
+      VpcId:
+        Ref: "EC2VPC"
+      Tags: []
+  MyInboundNACLEntryRule:
+    Type: AWS::EC2::NetworkAclEntry
     Properties:
-      NetworkAclId:
-        Ref: "EC2NetworkAcl"
-      SubnetId:
-        Ref: "EC2SubnetPublic2"
+      NetworkAclId: !Ref EC2NetworkAcl
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0 
+      PortRange:
+        From: -1
+        To: -1
+      Egress: false
+  MyInboundNACLEntryRuleIVP6:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref EC2NetworkAcl
+      RuleNumber: 101
+      Protocol: -1
+      RuleAction: allow
+      Ipv6CidrBlock: ::/0
+      PortRange:
+        From: -1
+        To: -1
+      Egress: false
+  MyOutboundNACLEntryRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref EC2NetworkAcl
+      RuleNumber: 110
+      Protocol: -1 
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0 
+      PortRange:
+        From: -1
+        To: -1
+      Egress: true  
+  MyOutboundNACLEntryRuleIVP6:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref EC2NetworkAcl
+      RuleNumber: 111
+      Protocol: -1 
+      RuleAction: allow
+      Ipv6CidrBlock: ::/0 
+      PortRange:
+        From: -1
+        To: -1
+      Egress: true
+  MyPrivateSubnet1NaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref EC2SubnetPrivate1
+      NetworkAclId: !Ref EC2NetworkAcl
+  MyPrivateSubnet2NaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref EC2SubnetPrivate2
+      NetworkAclId: !Ref EC2NetworkAcl
+  MyPublicSubnet1NaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref EC2SubnetPublic1
+      NetworkAclId: !Ref EC2NetworkAcl
+  MyPublicSubnet2NaclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref EC2SubnetPublic2
+      NetworkAclId: !Ref EC2NetworkAcl
   NewKeyPair:
     Type: 'AWS::EC2::KeyPair'
     Properties:
@@ -266,15 +327,18 @@ Resources:
           DeleteOnTermination: true
         DeviceName: "/dev/xvda"
       AvailabilityZone: "us-east-1a"
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: "true"
+          SubnetId:
+            "Ref": "EC2SubnetPublic1"
+          GroupSet:
+            - !Ref EC2SecurityGroupUserBastion
+            - !Ref EC2SecurityGroupECSRDS1
       PrivateDnsNameOptions:
         EnableResourceNameDnsARecord: false
         HostnameType: "ip-name"
         EnableResourceNameDnsAAAARecord: false
-      SubnetId:
-        Ref: "EC2SubnetPublic1"
-      SecurityGroupIds:
-      - !Ref EC2SecurityGroupUserBastion
-      - !Ref EC2SecurityGroupEC2RDS1
       EbsOptimized: false
       DisableApiTermination: false
       SourceDestCheck: true
@@ -285,13 +349,13 @@ Resources:
       Tags:
       - Value: "ec2-bastion"
         Key: "Name"
-  EC2SecurityGroupVPCIngressEgress:
+  EC2SecurityGroupCapstoneRDS:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::SecurityGroup"
     DeletionPolicy: "Delete"
     Properties:
-      GroupDescription: "Created by RDS management console"
-      GroupName: "capstone-vpc-sg"
+      GroupDescription: "Security Group on the RDS instance"
+      GroupName: "capstone-rds-sg"
       VpcId:
         Ref: "EC2VPC"
       SecurityGroupIngress:
@@ -308,7 +372,7 @@ Resources:
         IpProtocol: "-1"
         FromPort: -1
         ToPort: -1
-  ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19:
+  ALBTargetGroup:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
     DeletionPolicy: "Delete"
@@ -316,24 +380,17 @@ Resources:
     - EC2SubnetPrivate1
     - EC2SubnetPrivate2
     Properties:
+      Name: ALBTargetGroup
       IpAddressType: "ipv4"
       HealthCheckIntervalSeconds: 60
       Matcher:
         HttpCode: "200"
       HealthCheckPath: "/"
       Port: 8000
-      Targets:
-      - AvailabilityZone: "us-east-1a"
-        Port: 8000
-        Id: "10.16.0.159"
-      - AvailabilityZone: "us-east-1b"
-        Port: 8000
-        Id: "10.16.0.251"
       HealthCheckEnabled: true
       ProtocolVersion: "HTTP1"
       UnhealthyThresholdCount: 3
       HealthCheckTimeoutSeconds: 5
-      Name: "CapstoneECSTG3"
       VpcId:
         Ref: "EC2VPC"
       HealthyThresholdCount: 5
@@ -379,7 +436,7 @@ Resources:
       NatGatewayId:
         Ref: "EC2NatGateway2"
       RouteTableId:
-        Ref: "EC2RouteTable"
+        Ref: "EC2RouteTablePrivate2"
       DestinationCidrBlock: "0.0.0.0/0"
   EC2SubnetRouteTableAssociationEn:
     UpdateReplacePolicy: "Delete"
@@ -387,10 +444,10 @@ Resources:
     DeletionPolicy: "Delete"
     Properties:
       RouteTableId:
-        Ref: "EC2RouteTable"
+        Ref: "EC2RouteTablePrivate2"
       SubnetId:
         Ref: "EC2SubnetPrivate2"
-  EC2RouteTableGr:
+  EC2RouteTablePublic1:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::RouteTable"
     DeletionPolicy: "Delete"
@@ -400,6 +457,16 @@ Resources:
       Tags:
       - Value: "capstone-rtb-public"
         Key: "Name"
+  EC2RoutePublicToIGW:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::EC2::Route"
+    DeletionPolicy: "Delete"
+    Properties:
+      RouteTableId:
+        Ref: "EC2RouteTablePublic1"
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: 
+        Ref: EC2InternetGateway
   EC2VPCEndpointXB:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::VPCEndpoint"
@@ -471,6 +538,7 @@ Resources:
     DependsOn:
     - EC2SubnetPrivate1
     - EC2SubnetPrivate2
+    - RDSDBSubnetGroupCapstonedbsubnetgroup
     Properties:
       DatabaseInsightsMode: "standard"
       StorageEncrypted: true
@@ -506,10 +574,10 @@ Resources:
       MasterUserSecret: {}
       VPCSecurityGroups:
       - Fn::GetAtt:
-        - "EC2SecurityGroupRDSEC21"
+        - "EC2SecurityGroupRDSECS1"
         - "GroupId"
       - Fn::GetAtt:
-        - "EC2SecurityGroupVPCIngressEgress"
+        - "EC2SecurityGroupCapstoneRDS"
         - "GroupId"
       DBSecurityGroups: []
       MasterUsername: !Ref DBUsername
@@ -543,14 +611,20 @@ Resources:
       Tags:
       - Value: "capstone-subnet-public1-us-east-1a"
         Key: "Name"
-  EC2VPCDHCPOptionsAssociation:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
-    DeletionPolicy: "Delete"
+  MyDHCPOptions:
+    Type: AWS::EC2::DHCPOptions
     Properties:
-      VpcId:
-        Ref: "EC2VPC"
-      DhcpOptionsId: "dopt-09a2844160ff8cec1"
+      DomainNameServers:
+        - AmazonProvidedDNS
+      DomainName: !Sub "${AWS::Region}.compute.internal"
+      Tags:
+        - Key: Name
+          Value: MyDHCPOptionsSet
+  MyVPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      VpcId: !Ref EC2VPC
+      DhcpOptionsId: !Ref MyDHCPOptions
   EC2SecurityGroupSubnetVPCEndpoint:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::SecurityGroup"
@@ -600,7 +674,9 @@ Resources:
   ECSService:
     Type: 'AWS::ECS::Service'
     DependsOn:
-    - ECSTaskDefinitionTaskdefinitioncapstonefargate6
+    - ECSTaskDefinition
+    - ECSCluster
+    - ALBCapstone
     Properties:
       ServiceName: capstone-fargate-service
       Cluster: !Ref ECSCluster
@@ -608,26 +684,23 @@ Resources:
       LoadBalancers:
         - ContainerName: "fargate-app"
           ContainerPort: 8000
-          LoadBalancerName:
-            Ref: ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f
-          TargetGroupArn:
-            Ref: ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19
+          TargetGroupArn: !Ref ALBTargetGroup
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - !Ref EC2SecurityGroupEC2RDS1
+            - !Ref EC2SecurityGroupECSRDS1
           Subnets:
             - !Ref EC2SubnetPrivate1
             - !Ref EC2SubnetPrivate2
-      TaskDefinition: !Ref ECSTaskDefinitionTaskdefinitioncapstonefargate6
-  ECSTaskDefinitionTaskdefinitioncapstonefargate6:
+      TaskDefinition: !Ref ECSTaskDefinition
+  ECSTaskDefinition:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::ECS::TaskDefinition"
     DeletionPolicy: "Delete"
     DependsOn:
-    - ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f
+    - ALBCapstone
     Properties:
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -731,7 +804,7 @@ Resources:
       Tags:
       - Value: "capstone-vpce-ecr"
         Key: "Name"
-  EC2SecurityGroupEC2RDS1:
+  EC2SecurityGroupECSRDS1:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::SecurityGroup"
     DeletionPolicy: "Delete"
@@ -744,17 +817,17 @@ Resources:
   EC2SecurityGroupEgressECSRDS:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      GroupId: !Ref EC2SecurityGroupECSRDS1
       IpProtocol: "tcp"
-      DestinationSecurityGroupId: !Ref EC2SecurityGroupRDSEC21
-      Description: "Rule to allow connections to capstone-db from any instances\
+      DestinationSecurityGroupId: !Ref EC2SecurityGroupRDSECS1
+      Description: "Rule to allow connections to capstone-db from any ECS tasks\
         \ this security group is attached to"
       FromPort: 5432
       ToPort: 5432
   EC2SecurityGroupEgressECSInt:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      GroupId: !Ref EC2SecurityGroupECSRDS1
       Description: "Rule to allow connections to Amazon Services over VPCE Private DNS"
       CidrIp: "0.0.0.0/0"
       IpProtocol: "tcp"
@@ -763,7 +836,7 @@ Resources:
   EC2SecurityGroupEgressECSVPCE:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      GroupId: !Ref EC2SecurityGroupEC2RDS1
+      GroupId: !Ref EC2SecurityGroupECSRDS1
       Description: "Rule to allow connections from ECS tasks to VPC Endpoints in subnet"
       IpProtocol: "tcp"
       DestinationSecurityGroupId: !Ref "EC2SecurityGroupSubnetVPCEndpoint"
@@ -772,11 +845,11 @@ Resources:
   EC2SecurityGroupIngressALBECS:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref EC2SecurityGroupEC2RDS1
-      SourceSecurityGroupId: !Ref EC2SecurityGroupCapstoneALBSG
-      IpProtocol: "-1"
-      FromPort: -1
-      ToPort: -1
+      GroupId: !Ref EC2SecurityGroupECSRDS1
+      SourceSecurityGroupId: !Ref EC2SecurityGroupCapstoneALB
+      IpProtocol: "tcp"
+      FromPort: 8000
+      ToPort: 8000
       SourceSecurityGroupOwnerId: !Ref MyAccountNumber      
   EC2SubnetRouteTableAssociation:
     UpdateReplacePolicy: "Delete"
@@ -784,17 +857,9 @@ Resources:
     DeletionPolicy: "Delete"
     Properties:
       RouteTableId:
-        Ref: "EC2RouteTableGr"
+        Ref: "EC2RouteTablePublic1"
       SubnetId:
         Ref: "EC2SubnetPublic1"
-  EC2NetworkAcl:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::NetworkAcl"
-    DeletionPolicy: "Delete"
-    Properties:
-      VpcId:
-        Ref: "EC2VPC"
-      Tags: []
   LogsLogGroupAwslogscapstone:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::Logs::LogGroup"
@@ -805,15 +870,6 @@ Resources:
       RetentionInDays: 7
       LogGroupName: "awslogs-capstone"
       DataProtectionPolicy: {}
-  EC2SubnetNetworkAclAssociationUH:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::SubnetNetworkAclAssociation"
-    DeletionPolicy: "Delete"
-    Properties:
-      NetworkAclId:
-        Ref: "EC2NetworkAcl"
-      SubnetId:
-        Ref: "EC2SubnetPublic1"
   EC2VPCEndpoint:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::VPCEndpoint"
@@ -888,8 +944,8 @@ Resources:
       VpcId:
         Ref: "EC2VPC"
       RouteTableIds:
-      - Ref: "EC2RouteTableBy"
-      - Ref: "EC2RouteTable"
+      - Ref: "EC2RouteTablePrivate1"
+      - Ref: "EC2RouteTablePrivate2"
       ServiceName: "com.amazonaws.us-east-1.s3"
       PolicyDocument:
         Version: "2008-10-17"
@@ -925,7 +981,7 @@ Resources:
       Tags:
       - Value: "capstone-subnet-public2-us-east-1b"
         Key: "Name"
-  EC2SecurityGroupCapstoneALBSG:
+  EC2SecurityGroupCapstoneALB:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::SecurityGroup"
     DeletionPolicy: "Delete"
@@ -946,13 +1002,13 @@ Resources:
   EC2SecurityGroupEgressALBECS:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      GroupId: !Ref EC2SecurityGroupCapstoneALBSG
-      DestinationSecurityGroupId: !Ref EC2SecurityGroupEC2RDS1
-      IpProtocol: "-1"
+      GroupId: !Ref EC2SecurityGroupCapstoneALB
+      DestinationSecurityGroupId: !Ref EC2SecurityGroupECSRDS1
+      IpProtocol: "tcp"
       Description: "Allow traffic to flow to ecs service"
-      FromPort: -1
-      ToPort: -1
-  ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f:
+      FromPort: 8000
+      ToPort: 8000
+  ALBCapstone:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
     DeletionPolicy: "Delete"
@@ -960,9 +1016,10 @@ Resources:
     - EC2SubnetPublic1
     - EC2SubnetPublic2
     Properties:
+      Name: ALBCapstone
       IpAddressType: "ipv4"
       SecurityGroups:
-      - !Ref EC2SecurityGroupCapstoneALBSG
+      - !Ref EC2SecurityGroupCapstoneALB
       LoadBalancerAttributes:
       - Value: "append"
         Key: "routing.http.xff_header_processing.mode"
@@ -998,13 +1055,14 @@ Resources:
       Scheme: "internet-facing"
       EnablePrefixForIpv6SourceNat: "off"
       EnforceSecurityGroupInboundRulesOnPrivateLinkTraffic: ""
-      Tags: []
-      Name: "CapstoneECSALB3"
       SubnetMappings:
       - SubnetId:
           Ref: "EC2SubnetPublic1"
       - SubnetId:
           Ref: "EC2SubnetPublic2"
+      Tags:
+        - Key: Name
+          Value: ALBCapstone
   EC2EIP132195827:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::EIP"
@@ -1059,7 +1117,7 @@ Resources:
       - Value: "capstone-eip-us-east-1a"
         Key: "Name"
       NetworkBorderGroup: "us-east-1"
-  EC2RouteTableBy:
+  EC2RouteTablePrivate1:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::RouteTable"
     DeletionPolicy: "Delete"
@@ -1075,7 +1133,7 @@ Resources:
     DeletionPolicy: "Delete"
     Properties:
       RouteTableId:
-        Ref: "EC2RouteTableBy"
+        Ref: "EC2RouteTablePrivate1"
       SubnetId:
         Ref: "EC2SubnetPrivate1"
   EC2SubnetRouteTableAssociationLY:
@@ -1084,7 +1142,7 @@ Resources:
     DeletionPolicy: "Delete"
     Properties:
       RouteTableId:
-        Ref: "EC2RouteTableGr"
+        Ref: "EC2RouteTablePublic1"
       SubnetId:
         Ref: "EC2SubnetPublic2"
   EC2VPCEndpointN6:
@@ -1119,7 +1177,7 @@ Resources:
       Tags:
       - Value: "capstone-vpce-secrets-mgr"
         Key: "Name"
-  ElasticLoadBalancingV2ListenerListenerappCapstoneECSALB3f531d569f14ff05f338fbc32135f1c19:
+  ALBListener:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::ElasticLoadBalancingV2::Listener"
     DeletionPolicy: "Delete"
@@ -1167,40 +1225,28 @@ Resources:
         Key: "routing.http.response.access_control_max_age.header_value"
       SslPolicy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
       LoadBalancerArn:
-        Ref: "ElasticLoadBalancingV2LoadBalancerLoadbalancerappCapstoneECSALB3f531d569f14ff05f"
+        Ref: "ALBCapstone"
       DefaultActions:
       - TargetGroupArn:
-          Ref: "ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19"
+          Ref: "ALBTargetGroup"
         Type: "forward"
         ForwardConfig:
           TargetGroupStickinessConfig:
             Enabled: false
           TargetGroups:
           - TargetGroupArn:
-              Ref: "ElasticLoadBalancingV2TargetGroupTargetgroupCapstoneECSTG37746877fd5252f19"
+              Ref: "ALBTargetGroup"
             Weight: 1
       Port: 443
       Certificates:
       - CertificateArn: !Sub "arn:aws:acm:us-east-1:${MyAccountNumber}:certificate/feb0d556-b1d6-4b39-8287-78e95533a690"
       Protocol: "HTTPS"
-  EC2VPC:
-    UpdateReplacePolicy: "Delete"
-    Type: "AWS::EC2::VPC"
-    DeletionPolicy: "Delete"
-    Properties:
-      CidrBlock: "10.16.0.0/24"
-      EnableDnsSupport: true
-      InstanceTenancy: "default"
-      EnableDnsHostnames: true
-      Tags:
-      - Value: "capstone-vpc"
-        Key: "Name"
   VpcCidrBlockIpv6:
     Type: "AWS::EC2::VPCCidrBlock"
     Properties:
       VpcId: !Ref "EC2VPC"
       AmazonProvidedIpv6CidrBlock: true
-  EC2RouteTable:
+  EC2RouteTablePrivate2:
     UpdateReplacePolicy: "Delete"
     Type: "AWS::EC2::RouteTable"
     DeletionPolicy: "Delete"
@@ -1270,4 +1316,3 @@ Resources:
       - Ref: "EC2SubnetPrivate1"
       - Ref: "EC2SubnetPrivate2"
       DBSubnetGroupName: "capstone-db-subnet-group"
-
