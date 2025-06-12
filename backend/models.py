@@ -38,13 +38,42 @@ class Gender(enum.Enum):
     MALE = "M"
     FEMALE = "F"
 
-
-class Movie(db.Model):
-    __tablename__ = "movie"
+class Actor(db.Model):
+    __tablename__ = "actors"
 
     id = Column(db.Integer, primary_key=True)
-    title = Column(String)
+    name = Column(String, nullable=False)
+    age = Column(Integer, nullable=False)
+    gender = Column(Enum(Gender))
+    movies = db.relationship("Movie", secondary="casts", back_populates="actors")
+
+class Cast(db.Model):
+    __tablename__ = 'casts'
+
+    movie_id = db.Column(db.ForeignKey("movies.id"), nullable=False, primary_key=True)
+    actor_id = db.Column(db.ForeignKey("actors.id"), nullable=False, primary_key=True)
+
+
+class Genre(enum.Enum):
+    ACTION_AND_ADVENTURE = "ACTION_AND_ADVENTURE"
+    ANIMATION = "ANIMATION"
+    COMEDY = "COMEDY"
+    DOCUMENTARY = "DOCUMENTARY"
+    DRAMA = "DRAMA"
+    HISTORICAL = "HISTORICAL"
+    HORROR = "HORROR"
+    NOIR = "NOIR"
+    SCI_FI = "SCI_FI"
+    WESTERN = "WESTERN"
+
+class Movie(db.Model):
+    __tablename__ = "movies"
+
+    id = Column(db.Integer, primary_key=True)
+    title = Column(String, nullable=False)
     release_date = Column(Date)
+    actors = db.relationship("Actor", secondary="casts", back_populates="movies")
+    genre = Column(Enum(Genre), nullable=False)
 
     def __init__(self, title: str, release_date: date):
         if len(title) < 1:
@@ -55,12 +84,3 @@ class Movie(db.Model):
 
     def format(self):
         return {"id": self.id, "title": self.title, "release_date": self.release_date}
-
-
-class Actor(db.Model):
-    __tablename__ = "actor"
-
-    id = Column(db.Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    age = Column(Integer, nullable=False)
-    gender = Column(Enum(Gender))
