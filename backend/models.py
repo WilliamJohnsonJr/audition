@@ -1,9 +1,11 @@
 import os
 import enum
+from typing import Optional
 from flask import Flask
 from sqlalchemy.orm import DeclarativeBase
 from datetime import date
-from sqlalchemy import Column, Enum, Integer, String, Date
+from sqlalchemy import Enum, Integer, String, Date
+from sqlalchemy.orm import mapped_column, Mapped
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
@@ -36,14 +38,14 @@ class Gender(enum.Enum):
 class Actor(db.Model):
     __tablename__ = "actors"
 
-    id = Column(db.Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    age = Column(Integer, nullable=False)
-    photo_url = Column(String)
-    gender = Column(Enum(Gender))
+    age: Mapped[int] = mapped_column(Integer, nullable=False)
+    gender: Mapped[Optional[Gender]] = mapped_column(Enum(Gender))
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    photo_url: Mapped[Optional[str]] = mapped_column(String)
     movies = db.relationship("Movie", secondary="casts", back_populates="actors")
 
-    def __init__(self, name: str, age: int, photo_url: str | None, gender: Gender | None):
+    def __init__(self, name: str, age: int, photo_url: Optional[str], gender: Optional[Gender]):
         self.age = age
         self.gender = gender
         self.name = name
@@ -64,8 +66,8 @@ class Actor(db.Model):
 class Cast(db.Model):
     __tablename__ = 'casts'
 
-    movie_id = db.Column(db.ForeignKey("movies.id"), nullable=False, primary_key=True)
-    actor_id = db.Column(db.ForeignKey("actors.id"), nullable=False, primary_key=True)
+    movie_id: Mapped[int] = mapped_column(db.ForeignKey("movies.id"), nullable=False, primary_key=True)
+    actor_id: Mapped[int] = mapped_column(db.ForeignKey("actors.id"), nullable=False, primary_key=True)
 
 
 class Genre(enum.Enum):
@@ -83,14 +85,14 @@ class Genre(enum.Enum):
 class Movie(db.Model):
     __tablename__ = "movies"
 
-    id = Column(db.Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    release_date = Column(Date)
+    genre: Mapped[Optional[Genre]] = mapped_column(Enum(Genre), nullable=False)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    poster_url: Mapped[Optional[str]] = mapped_column(String)
+    release_date: Mapped[Optional[date]] = mapped_column(Date)
+    title: Mapped[str] = mapped_column(String, nullable=False)
     actors = db.relationship("Actor", secondary="casts", back_populates="movies")
-    genre = Column(Enum(Genre), nullable=False)
-    poster_url = Column(String)
 
-    def __init__(self, genre: Genre, title: str, release_date: date | None, poster_url: str | None ):
+    def __init__(self, genre: Genre, title: str, release_date: Optional[date], poster_url: Optional[str] ):
         if len(title) < 1:
             raise ValueError("Invalid title")
 

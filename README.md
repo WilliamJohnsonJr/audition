@@ -1,4 +1,6 @@
-# Udacity Full Stack Capstone
+# Audition: A Movie Casting App for Casting Agencies
+
+Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
@@ -8,7 +10,9 @@ Backend: Python with Flask + SQLAlchemy + Alembic
 
 Database: PostgreSQL 16
 
-Hosting: AWS RDS (DB), ECS Fargate (API), and S3 Static-Site Hosting (Frontend).
+Auth: Auth0
+
+Hosting: AWS RDS (PostgresQL DB), ECS Fargate (Flask API app), and S3 Static-Site Hosting (React Frontend).
 
 See the READMEs in the `frontend` and `backend` directory for specific information on running the Frontend and Backend.
 
