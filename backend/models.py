@@ -63,11 +63,30 @@ class Actor(db.Model):
             "photo_url": self.photo_url,
         }
 
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
 class Cast(db.Model):
     __tablename__ = 'casts'
 
     movie_id: Mapped[int] = mapped_column(db.ForeignKey("movies.id"), nullable=False, primary_key=True)
     actor_id: Mapped[int] = mapped_column(db.ForeignKey("actors.id"), nullable=False, primary_key=True)
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 
 class Genre(enum.Enum):
@@ -85,7 +104,7 @@ class Genre(enum.Enum):
 class Movie(db.Model):
     __tablename__ = "movies"
 
-    genre: Mapped[Optional[Genre]] = mapped_column(Enum(Genre), nullable=False)
+    genre: Mapped[Genre] = mapped_column(Enum(Genre), nullable=False)
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     poster_url: Mapped[Optional[str]] = mapped_column(String)
     release_date: Mapped[Optional[date]] = mapped_column(Date)
@@ -112,3 +131,14 @@ class Movie(db.Model):
             "release_date": self.release_date,
             "title": self.title,
         }
+    
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
