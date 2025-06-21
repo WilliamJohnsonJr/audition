@@ -1,11 +1,45 @@
 from datetime import date, datetime
 import os
+import re
+import json
+import hashlib
 from typing import Optional
-from flask import Flask, abort, request, jsonify
+from sqlalchemy.exc import IntegrityError
+from flask import Flask, abort, make_response, request, jsonify
 from models import Gender, Genre, setup_db, Movie, Actor
 from flask_cors import CORS
 
 origins = os.environ.get("ORIGINS", "localhost")
+
+
+def _camel_to_snake(camel_case_str: str):
+    # Use regex to replace camelCase with snake_case
+    snake_case_str = re.sub(r"(?<!^)(?=[A-Z])", "_", camel_case_str).lower()
+    return snake_case_str
+
+def _convert_json_patch_request_to_dict(
+    body: list[dict], model: type[Movie | Actor]
+):
+    new_dict = {}
+    for item in body:
+        if not isinstance(item, dict):
+            raise TypeError("invalid JSON patch schema")
+        if item["op"] is None or item["op"] not in ["add", "replace"]:
+            raise ValueError("invalid JSON patch operation")
+        if item["path"] is None or _camel_to_snake(item["path"][1:]) not in [column.name for column in model.__table__.columns]:  # type: ignore
+            raise ValueError("invalid JSON patch path")
+        new_dict[_camel_to_snake(item["path"][1:])] = item["value"]
+
+    return new_dict
+
+def _create_etag(record: Movie | Actor):
+    # Convert the dictionary to a JSON string
+    orig_dict_string = json.dumps(
+        record.format(), sort_keys=True
+    )  # sort_keys to ensure consistent ordering
+    # Create a SHA-256 hash of the string to use for comparison and as an ETag
+    return hashlib.sha256(orig_dict_string.encode()).hexdigest()
+
 
 def create_app(test_config=None):
 
@@ -17,7 +51,11 @@ def create_app(test_config=None):
     def get_movies():
         filter_by = request.args.get("search", "", type=str)
         search_term = f"%{filter_by}%"
-        movies = Movie.query.filter(Movie.title.ilike(search_term)).order_by(Movie.title).all()
+        movies = (
+            Movie.query.filter(Movie.title.ilike(search_term))
+            .order_by(Movie.title)
+            .all()
+        )
 
         return (
             jsonify({"success": True, "movies": [movie.format() for movie in movies]}),
@@ -28,67 +66,226 @@ def create_app(test_config=None):
     def post_movie():
         body = request.get_json()
         if not (
-            isinstance(body.get('title'), str) 
-            and isinstance(body.get('genre'), Genre) 
-            and isinstance(body.get('releaseDate'), str|None) 
-            and isinstance(body.get('posterUrl'), str|None)
+            isinstance(body.get("title"), str)
+            and body.get("genre") in (genre.value for genre in Genre)
+            and (body.get("releaseDate") is None or isinstance(body.get("releaseDate"), str))
+            and (body.get("posterUrl") is None or isinstance(body.get("posterUrl"), str))
         ):
             abort(400)
 
-        genre = body.get('genre', None)
-        release_date = body.get('releaseDate', None)
+        genre = body.get("genre")
+        release_date = body.get("releaseDate", None)
         parsed_date: Optional[date] = None
         if release_date:
             try:
-                parsed_date = datetime.strptime(release_date, '%Y-%m-%d').date()
-            except Exception as e:
+                parsed_date = datetime.strptime(release_date, "%Y-%m-%d").date()
+            except Exception:
                 abort(400)
 
         movie = Movie(
-            title=body.get('title'),
+            title=body.get("title"),
             genre=(Genre[genre]),
             release_date=(parsed_date if parsed_date else None),
-            poster_url=body.get('posterUrl', None)
+            poster_url=body.get("posterUrl", None),
         )
 
         movie.add()
 
-        return jsonify({"success": True, "id": movie.id}), 200
+        return jsonify({"success": True, "id": movie.id}), 201
 
+    @app.route("/movies/<int:movie_id>", methods=["GET"])
+    def get_movie(movie_id: int):
+        if not isinstance(movie_id, int):
+            abort(400)
+        movie = Movie.query.get_or_404(movie_id)
+        etag = _create_etag(movie)
+
+        response = make_response(
+            jsonify({"success": True, "movie": movie.format()}), 200
+        )
+        response.headers["ETag"] = etag
+        return response
+
+    # JSON Patch https://datatracker.ietf.org/doc/html/rfc6902
+    #     [
+    #      { "op": "test", "path": "/a/b/c", "value": "foo" },
+    #      { "op": "remove", "path": "/a/b/c" },
+    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] },
+    #      { "op": "replace", "path": "/a/b/c", "value": 42 },
+    #      { "op": "move", "from": "/a/b/c", "path": "/a/b/d" },
+    #      { "op": "copy", "from": "/a/b/d", "path": "/a/b/e" }
+    #    ]
+    @app.route("/movies/<int:movie_id>", methods=["PATCH"])
+    def update_movie(movie_id: int):
+        if not isinstance(movie_id, int):
+            abort(400)
+        if request.headers.get("Content-Type") != "application/json-patch+json":
+            abort(415)
+
+        body = request.get_json()
+
+        if body is None or not isinstance(body, list):
+            abort(400)
+
+        try:
+            data = _convert_json_patch_request_to_dict(body, Movie)
+        except TypeError:
+            abort(400)
+        except ValueError:
+            abort(400)
+
+        movie = Movie.query.get_or_404(movie_id)
+
+        orig_hash = _create_etag(movie)
+
+        for key in data:
+            if key == "title":
+                if not data["title"] or not isinstance(data["title"], str):
+                    abort(400)
+                else:
+                    movie.title = data["title"]
+            if key == "genre":
+                if data["genre"] is None:
+                    abort(400)
+                try:
+                    movie.genre = Genre[data["genre"]]
+                except Exception:
+                    abort(400)
+            if key == "release_date":
+                if data["release_date"] and (data["release_date"] == "" or not isinstance(data["release_date"], str)):
+                    abort(400)
+                try:
+                    movie.release_date = datetime.strptime(data["release_date"], "%Y-%m-%d").date() if data["release_date"] else None
+                except Exception:
+                    abort(400)
+            if key == "poster_url":
+                if data["poster_url"] and (data["poster_url"] == "" or not isinstance(data["poster_url"], str)):
+                    abort(400)
+                movie.poster_url = data["poster_url"]
+
+        new_hash = _create_etag(movie)
+
+        if new_hash == orig_hash:
+            response = make_response(jsonify(), 204)
+            response.headers["ETag"] = orig_hash
+            return response
+        else:
+            movie.update()  # Only update if content changed
+            response = make_response(jsonify({"success": True, "id": movie.id}), 200)
+            response.headers["ETag"] = new_hash
+            return response
 
     @app.route("/actors", methods=["GET"])
     def get_actors():
         filter_by = request.args.get("search", "", type=str)
         search_term = f"%{filter_by}%"
-        actors = Actor.query.filter(Actor.name.ilike(search_term)).order_by(Actor.name).all()
+        actors = (
+            Actor.query.filter(Actor.name.ilike(search_term)).order_by(Actor.name).all()
+        )
         return (
             jsonify({"success": True, "actors": [actor.format() for actor in actors]}),
             200,
         )
-    
+
     @app.route("/actors", methods=["POST"])
     def post_actor():
         body = request.get_json()
         if not (
-            isinstance(body.get('name'), str) 
-            and isinstance(body.get('gender'), Gender|None) 
-            and isinstance(body.get('age'), int) 
-            and isinstance(body.get('photoUrl'), str|None)
+            isinstance(body.get("name"), str)
+            and (body.get("gender") is None or body.get("gender") in (genre.value for genre in Genre))
+            and isinstance(body.get("age"), int)
+            and (body.get("photoUrl") is None or isinstance(body.get("photoUrl"), str))
         ):
             abort(400)
 
-        gender = body.get('gender', None)
+        gender = body.get("gender", None)
 
         actor = Actor(
-            name=body.get('name'),
+            name=body.get("name"),
             gender=(Gender[gender] if gender else None),
-            age=body.get('age'),
-            photo_url=body.get('photoUrl', None)
+            age=body.get("age"),
+            photo_url=body.get("photoUrl", None),
         )
 
         actor.add()
-
         return jsonify({"success": True, "id": actor.id}), 200
+
+    @app.route("/actors/<int:actor_id>", methods=["GET"])
+    def get_actor(actor_id: int):
+        if not isinstance(actor_id, int):
+            abort(400)
+        actor = Actor.query.get_or_404(actor_id)
+        etag = _create_etag(actor)
+
+        response = make_response(
+            jsonify({"success": True, "actor": actor.format()}), 200
+        )
+        response.headers["ETag"] = etag
+        return response
+
+    # JSON Patch https://datatracker.ietf.org/doc/html/rfc6902
+    #     [
+    #      { "op": "test", "path": "/a/b/c", "value": "foo" },
+    #      { "op": "remove", "path": "/a/b/c" },
+    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] },
+    #      { "op": "replace", "path": "/a/b/c", "value": 42 },
+    #      { "op": "move", "from": "/a/b/c", "path": "/a/b/d" },
+    #      { "op": "copy", "from": "/a/b/d", "path": "/a/b/e" }
+    #    ]
+    @app.route("/actors/<int:actor_id>", methods=["PATCH"])
+    def update_actor(actor_id: int):
+        if not isinstance(actor_id, int):
+            abort(400)
+        if request.headers.get("Content-Type") != "application/json-patch+json":
+            abort(415)
+
+        body = request.get_json()
+
+        if body is None or not isinstance(body, list):
+            abort(400)
+
+        try:
+            data = _convert_json_patch_request_to_dict(body, Actor)
+        except TypeError:
+            abort(400)
+        except ValueError:
+            abort(400)
+
+        actor = Actor.query.get_or_404(actor_id)
+
+        orig_hash = _create_etag(actor)
+
+        for key in data:
+            if key == "name":
+                if not data["name"] or not isinstance(data["name"], str):
+                    abort(400)
+                else:
+                    actor.name = data["name"]
+            if key == "gender":
+                try:
+                    actor.gender = Gender[data["gender"]] if data["gender"] else None
+                except Exception:
+                    abort(400)
+            if key == "age":
+                if not data["age"] or not isinstance(data["age"], int):
+                    abort(400)
+                actor.age = data["age"]
+            if key == "photo_url":
+                if data["photo_url"] and (data["photo_url"] == "" or not isinstance(data["photo_url"], str)):
+                    abort(400)
+                actor.photo_url = data["photo_url"]
+
+        new_hash = _create_etag(actor)
+
+        if new_hash == orig_hash:
+            response = make_response(jsonify(), 204)
+            response.headers["ETag"] = orig_hash
+            return response
+        else:
+            actor.update()  # Only update if content changed
+            response = make_response(jsonify({"success": True, "id": actor.id}), 200)
+            response.headers["ETag"] = new_hash
+            return response
 
     @app.errorhandler(400)
     def bad_request(error):
@@ -107,7 +304,7 @@ def create_app(test_config=None):
         return jsonify({"success": False, "error": "Unsupported Media Type"}), 415
 
     @app.errorhandler(422)
-    def unsupported_media_type(error):
+    def unprocessable_content(error):
         return jsonify({"success": False, "error": "Unprocessable Content"}), 422
 
     @app.errorhandler(500)

@@ -9,8 +9,10 @@ from sqlalchemy.orm import mapped_column, Mapped
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
+
 class Base(DeclarativeBase):
     pass
+
 
 database_path = os.environ["DATABASE_URL"]
 if database_path.startswith("postgres://"):
@@ -23,6 +25,7 @@ setup_db(app)
     binds a flask application and a SQLAlchemy service
 """
 
+
 def setup_db(app: Flask, database_path=database_path):
     app.config["SQLALCHEMY_DATABASE_URI"] = database_path
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -32,8 +35,9 @@ def setup_db(app: Flask, database_path=database_path):
 
 
 class Gender(enum.Enum):
-    MALE = "M"
-    FEMALE = "F"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+
 
 class Actor(db.Model):
     __tablename__ = "actors"
@@ -45,7 +49,9 @@ class Actor(db.Model):
     photo_url: Mapped[Optional[str]] = mapped_column(String)
     movies = db.relationship("Movie", secondary="casts", back_populates="actors")
 
-    def __init__(self, name: str, age: int, photo_url: Optional[str], gender: Optional[Gender]):
+    def __init__(
+        self, name: str, age: int, photo_url: Optional[str], gender: Optional[Gender]
+    ):
         self.age = age
         self.gender = gender
         self.name = name
@@ -57,7 +63,7 @@ class Actor(db.Model):
     def format(self):
         return {
             "age": self.age,
-            "gender": self.gender,
+            "gender": self.gender.value if self.gender else None,
             "id": self.id,
             "name": self.name,
             "photo_url": self.photo_url,
@@ -74,11 +80,16 @@ class Actor(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-class Cast(db.Model):
-    __tablename__ = 'casts'
 
-    movie_id: Mapped[int] = mapped_column(db.ForeignKey("movies.id"), nullable=False, primary_key=True)
-    actor_id: Mapped[int] = mapped_column(db.ForeignKey("actors.id"), nullable=False, primary_key=True)
+class Cast(db.Model):
+    __tablename__ = "casts"
+
+    movie_id: Mapped[int] = mapped_column(
+        db.ForeignKey("movies.id"), nullable=False, primary_key=True
+    )
+    actor_id: Mapped[int] = mapped_column(
+        db.ForeignKey("actors.id"), nullable=False, primary_key=True
+    )
 
     def add(self):
         db.session.add(self)
@@ -101,6 +112,7 @@ class Genre(enum.Enum):
     SCI_FI = "SCI_FI"
     WESTERN = "WESTERN"
 
+
 class Movie(db.Model):
     __tablename__ = "movies"
 
@@ -111,7 +123,13 @@ class Movie(db.Model):
     title: Mapped[str] = mapped_column(String, nullable=False)
     actors = db.relationship("Actor", secondary="casts", back_populates="movies")
 
-    def __init__(self, genre: Genre, title: str, release_date: Optional[date], poster_url: Optional[str] ):
+    def __init__(
+        self,
+        genre: Genre,
+        title: str,
+        release_date: Optional[date],
+        poster_url: Optional[str],
+    ):
         if len(title) < 1:
             raise ValueError("Invalid title")
 
@@ -125,13 +143,13 @@ class Movie(db.Model):
 
     def format(self):
         return {
-            "genre": self.genre,
+            "genre": self.genre.value,
             "id": self.id,
             "poster_url": self.poster_url,
-            "release_date": self.release_date,
+            "release_date": date.strftime(self.release_date, "%Y-%m-%d") if self.release_date  else "",
             "title": self.title,
         }
-    
+
     def add(self):
         db.session.add(self)
         db.session.commit()
