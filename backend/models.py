@@ -106,6 +106,7 @@ class Genre(enum.Enum):
     COMEDY = "COMEDY"
     DOCUMENTARY = "DOCUMENTARY"
     DRAMA = "DRAMA"
+    FANTASY = "FANTASY"
     HISTORICAL = "HISTORICAL"
     HORROR = "HORROR"
     NOIR = "NOIR"
@@ -146,7 +147,11 @@ class Movie(db.Model):
             "genre": self.genre.value,
             "id": self.id,
             "poster_url": self.poster_url,
-            "release_date": date.strftime(self.release_date, "%Y-%m-%d") if self.release_date  else "",
+            "release_date": (
+                date.strftime(self.release_date, "%Y-%m-%d")
+                if self.release_date
+                else ""
+            ),
             "title": self.title,
         }
 
