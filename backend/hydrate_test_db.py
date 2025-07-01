@@ -60,6 +60,18 @@ def make_movies(app: Flask):
                 "genre": "SCI_FI",
                 "release_date": "2012-05-04",
             },
+            {
+                "title": "Friday",
+                "id": 10,
+                "genre": "COMEDY",
+                "release_date": "1995-04-26"
+            },
+            {
+                "title": "Lilo & Stitch",
+                "id": 11,
+                "genre": "ANIMATION",
+                "release_date": "2002-06-16"
+            }
         ]
         objects = [
             Movie(
@@ -70,8 +82,6 @@ def make_movies(app: Flask):
             )
             for movie in movies
         ]
-        for index, object in enumerate(objects):
-            object.id = movies[index]["id"]
 
         return objects
 

@@ -150,7 +150,7 @@ class Movie(db.Model):
             "release_date": (
                 date.strftime(self.release_date, "%Y-%m-%d")
                 if self.release_date
-                else ""
+                else None
             ),
             "title": self.title,
         }

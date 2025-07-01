@@ -46,11 +46,11 @@ def _convert_json_patch_request_to_dict(body: list[dict], model: type[Movie | Ac
     for item in body:
         if not isinstance(item, dict):
             raise TypeError("invalid JSON patch schema")
-        if item["op"] is None or item["op"] not in ["add", "replace"]:
+        if item["op"] is None or item["op"] not in ["add", "remove"] or (item["op"] == "remove" and "value" in item.keys()):
             raise ValueError("invalid JSON patch operation")
         if item["path"] is None or _camel_to_snake(item["path"][1:]) not in [column.name for column in model.__table__.columns]:  # type: ignore
             raise ValueError("invalid JSON patch path")
-        new_dict[_camel_to_snake(item["path"][1:])] = item["value"]
+        new_dict[_camel_to_snake(item["path"][1:])] = item["value"] if item["op"] != "remove" else None
 
     return new_dict
 
@@ -63,6 +63,8 @@ def _create_etag(record: Movie | Actor):
     # Create a SHA-256 hash of the string to use for comparison and as an ETag
     return hashlib.sha256(orig_dict_string.encode()).hexdigest()
 
+def _abort_if_falsy_and_not_none(value):
+    return not value and value != None
 
 def create_app(test_config=None):
 
@@ -117,7 +119,7 @@ def create_app(test_config=None):
     def post_movie():
         body = request.get_json()
         if not (
-            isinstance(body.get("title"), str)
+            isinstance(body.get("title"), str) and body.get("title")
             and body.get("genre") in (genre.value for genre in Genre)
             and (
                 body.get("releaseDate") is None
@@ -163,13 +165,10 @@ def create_app(test_config=None):
         return response
 
     # JSON Patch https://datatracker.ietf.org/doc/html/rfc6902
+    # No operations are allowed besides add and remove. Use add instead of replace.
     #     [
-    #      { "op": "test", "path": "/a/b/c", "value": "foo" },
     #      { "op": "remove", "path": "/a/b/c" },
-    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] },
-    #      { "op": "replace", "path": "/a/b/c", "value": 42 },
-    #      { "op": "move", "from": "/a/b/c", "path": "/a/b/d" },
-    #      { "op": "copy", "from": "/a/b/d", "path": "/a/b/e" }
+    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] }
     #    ]
     @app.route("/movies/<int:movie_id>", methods=["PATCH"])
     def update_movie(movie_id: int):
@@ -201,17 +200,14 @@ def create_app(test_config=None):
                 else:
                     movie.title = data["title"]
             if key == "genre":
-                if data["genre"] is None:
+                if not data["genre"]:
                     abort(400)
                 try:
                     movie.genre = Genre[data["genre"]]
                 except Exception:
                     abort(400)
             if key == "release_date":
-                if data["release_date"] and (
-                    data["release_date"] == ""
-                    or not isinstance(data["release_date"], str)
-                ):
+                if (data["release_date"] and not isinstance(data["release_date"], str)) or _abort_if_falsy_and_not_none(data["release_date"]):
                     abort(400)
                 try:
                     movie.release_date = (
@@ -222,9 +218,7 @@ def create_app(test_config=None):
                 except Exception:
                     abort(400)
             if key == "poster_url":
-                if data["poster_url"] and (
-                    data["poster_url"] == "" or not isinstance(data["poster_url"], str)
-                ):
+                if (data["poster_url"] and not isinstance(data["poster_url"], str)) or _abort_if_falsy_and_not_none(data["poster_url"]):
                     abort(400)
                 movie.poster_url = data["poster_url"]
 
@@ -239,6 +233,18 @@ def create_app(test_config=None):
             response = make_response(jsonify({"success": True, "id": movie.id}), 200)
             response.headers["ETag"] = new_hash
             return response
+
+    @app.route("/movies/<int:movie_id>", methods=["DELETE"])
+    def delete_movie(movie_id: int):
+        if not isinstance(movie_id, int):
+            abort(400)
+        movie = Movie.query.get_or_404(movie_id)
+        movie_id = movie.id
+        movie.delete()
+
+        payload = _camel_case_dict({"success": True, "id": movie_id})
+        response = make_response(jsonify(payload), 200)
+        return response
 
     @app.route("/actors", methods=["GET"])
     def get_actors():
@@ -276,7 +282,7 @@ def create_app(test_config=None):
                 body.get("gender") is None
                 or body.get("gender") in (gender.value for gender in Gender)
             )
-            and isinstance(body.get("age"), int)
+            and isinstance(body.get("age"), int) and body.get("age") > 0
             and (body.get("photoUrl") is None or isinstance(body.get("photoUrl"), str))
         ):
             abort(400)
@@ -306,13 +312,10 @@ def create_app(test_config=None):
         return response
 
     # JSON Patch https://datatracker.ietf.org/doc/html/rfc6902
+    # No operations are allowed besides add and remove. Use add instead of replace.
     #     [
-    #      { "op": "test", "path": "/a/b/c", "value": "foo" },
     #      { "op": "remove", "path": "/a/b/c" },
-    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] },
-    #      { "op": "replace", "path": "/a/b/c", "value": 42 },
-    #      { "op": "move", "from": "/a/b/c", "path": "/a/b/d" },
-    #      { "op": "copy", "from": "/a/b/d", "path": "/a/b/e" }
+    #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] }
     #    ]
     @app.route("/actors/<int:actor_id>", methods=["PATCH"])
     def update_actor(actor_id: int):
@@ -353,10 +356,10 @@ def create_app(test_config=None):
                     abort(400)
                 actor.age = data["age"]
             if key == "photo_url":
-                if data["photo_url"] and (
-                    data["photo_url"] == "" or not isinstance(data["photo_url"], str)
-                ):
+                if _abort_if_falsy_and_not_none(data["photo_url"]):
                     abort(400)
+                if data["photo_url"] and not isinstance(data["photo_url"], str):
+                    return abort(400)
                 actor.photo_url = data["photo_url"]
 
         new_hash = _create_etag(actor)
