@@ -246,7 +246,7 @@ class AuditionTestCase(unittest.TestCase):
         self.assertEqual(data, {"success": False, "error": "Method Not Allowed"})
 
     def test_get_actor(self):
-        res = self.client.get('/actors/1')
+        res = self.client.get("/actors/1")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
@@ -263,7 +263,7 @@ class AuditionTestCase(unittest.TestCase):
         )
 
     def test_get_actor_404(self):
-        res = self.client.get('/actors/99')
+        res = self.client.get("/actors/99")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
@@ -272,11 +272,13 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor(self):
         patch_request = [
-            { "op": "add", "path": "/age", "value": 4 },
-            { "op": "remove", "path": "/photoUrl" },
+            {"op": "add", "path": "/age", "value": 4},
+            {"op": "remove", "path": "/photoUrl"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         etag = res.get_etag()[0]
@@ -291,11 +293,27 @@ class AuditionTestCase(unittest.TestCase):
 
         self.assertDictEqual(
             data2["actor"],
-            {"age": 4, "gender": "MALE", "id": 1, "name": "Tom Hanks", "photoUrl": None},
+            {
+                "age": 4,
+                "gender": "MALE",
+                "id": 1,
+                "name": "Tom Hanks",
+                "photoUrl": None,
+            },
         )
         self.assertEqual(res2.get_etag()[0], etag)
 
-        res3 = self.client.patch("/actors/1", json=[{"op": "add", "path": "/photoUrl", "value": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg"}], content_type="application/json-patch+json")
+        res3 = self.client.patch(
+            "/actors/1",
+            json=[
+                {
+                    "op": "add",
+                    "path": "/photoUrl",
+                    "value": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
+                }
+            ],
+            content_type="application/json-patch+json",
+        )
         data3 = json.loads(res3.data)
         etag2 = res3.get_etag()[0]
 
@@ -305,11 +323,13 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_falsy_value_instead_of_remove_op(self):
         patch_request = [
-            { "op": "add", "path": "/age", "value": 4 },
-            { "op": "add", "path": "/photoUrl", "value": "" },
+            {"op": "add", "path": "/age", "value": 4},
+            {"op": "add", "path": "/photoUrl", "value": ""},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -318,10 +338,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_remove_name(self):
         patch_request = [
-            { "op": "remove", "path": "/name"},
+            {"op": "remove", "path": "/name"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -330,10 +352,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_empty_string_name(self):
         patch_request = [
-            { "op": "add", "path": "/name", "value": ""},
+            {"op": "add", "path": "/name", "value": ""},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -342,10 +366,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_move_op_not_allowed(self):
         patch_request = [
-            { "op": "move", "from": "/name", "path": "/surname"},
+            {"op": "move", "from": "/name", "path": "/surname"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -354,10 +380,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_replace_op_not_allowed(self):
         patch_request = [
-            { "op": "replace", "path": "/name", "value": "Tim Burton"},
+            {"op": "replace", "path": "/name", "value": "Tim Burton"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -366,10 +394,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_copy_op_not_allowed(self):
         patch_request = [
-            { "op": "copy", "from": "/name", "path": "/surname"},
+            {"op": "copy", "from": "/name", "path": "/surname"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -378,10 +408,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_actor_400_test_op_not_allowed(self):
         patch_request = [
-            { "op": "test", "path": "/name", "value": "Tom Hanks"},
+            {"op": "test", "path": "/name", "value": "Tom Hanks"},
         ]
 
-        res = self.client.patch('/actors/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/actors/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -558,7 +590,6 @@ class AuditionTestCase(unittest.TestCase):
         # Fails, since genre must be a Genre enum value
         new_movie = {
             "genre": 0,
-            
             "title": "Wayne's World",
             "releaseDate": "1992-02-14",
         }
@@ -573,7 +604,6 @@ class AuditionTestCase(unittest.TestCase):
         # Fails, since genre must be one of the Genre enum values
         new_movie = {
             "genre": "BLACK_COMEDY",
-            
             "title": "Wayne's World",
             "releaseDate": "1992-02-14",
         }
@@ -624,7 +654,6 @@ class AuditionTestCase(unittest.TestCase):
         # Fails, since PATCH is not allowed on the movies endpoint
         new_movie = {
             "genre": "COMEDY",
-            
             "title": "Wayne's World",
             "releaseDate": "1992-02-14",
         }
@@ -636,7 +665,7 @@ class AuditionTestCase(unittest.TestCase):
         self.assertEqual(data, {"success": False, "error": "Method Not Allowed"})
 
     def test_get_movie(self):
-        res = self.client.get('/movies/1')
+        res = self.client.get("/movies/1")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
@@ -653,7 +682,7 @@ class AuditionTestCase(unittest.TestCase):
         )
 
     def test_get_movie_404(self):
-        res = self.client.get('/movies/99')
+        res = self.client.get("/movies/99")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
@@ -662,11 +691,13 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie(self):
         patch_request = [
-            { "op": "add", "path": "/genre", "value": "COMEDY" },
-            { "op": "remove", "path": "/releaseDate" },
+            {"op": "add", "path": "/genre", "value": "COMEDY"},
+            {"op": "remove", "path": "/releaseDate"},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         etag = res.get_etag()[0]
@@ -681,7 +712,13 @@ class AuditionTestCase(unittest.TestCase):
 
         self.assertDictEqual(
             data2["movie"],
-            {"genre": "COMEDY",  "id": 1, "title": "Apollo 13", "releaseDate": None, "posterUrl": None},
+            {
+                "genre": "COMEDY",
+                "id": 1,
+                "title": "Apollo 13",
+                "releaseDate": None,
+                "posterUrl": None,
+            },
         )
         self.assertEqual(res2.get_etag()[0], etag)
 
@@ -699,11 +736,13 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_empty_string_instead_of_remove_op(self):
         patch_request = [
-            { "op": "add", "path": "/genre", "value": "COMEDY" },
-            { "op": "add", "path": "/releaseDate", "value": "" },
+            {"op": "add", "path": "/genre", "value": "COMEDY"},
+            {"op": "add", "path": "/releaseDate", "value": ""},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -712,10 +751,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_remove_title(self):
         patch_request = [
-            { "op": "remove", "path": "/title"},
+            {"op": "remove", "path": "/title"},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -724,10 +765,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_empty_string_title(self):
         patch_request = [
-            { "op": "add", "path": "/title", "value": ""},
+            {"op": "add", "path": "/title", "value": ""},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -736,10 +779,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_move_op_not_allowed(self):
         patch_request = [
-            { "op": "move", "from": "/title", "path": "/subtitle"},
+            {"op": "move", "from": "/title", "path": "/subtitle"},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -748,10 +793,16 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_replace_op_not_allowed(self):
         patch_request = [
-            { "op": "replace", "path": "/title", "value": "The Nightmare Before Christmas"},
+            {
+                "op": "replace",
+                "path": "/title",
+                "value": "The Nightmare Before Christmas",
+            },
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -760,10 +811,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_copy_op_not_allowed(self):
         patch_request = [
-            { "op": "copy", "from": "/title", "path": "/subtitle"},
+            {"op": "copy", "from": "/title", "path": "/subtitle"},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -772,10 +825,12 @@ class AuditionTestCase(unittest.TestCase):
 
     def test_patch_movie_400_test_op_not_allowed(self):
         patch_request = [
-            { "op": "test", "path": "/title", "value": "Anything"},
+            {"op": "test", "path": "/title", "value": "Anything"},
         ]
 
-        res = self.client.patch('/movies/1', json=patch_request, content_type="application/json-patch+json")
+        res = self.client.patch(
+            "/movies/1", json=patch_request, content_type="application/json-patch+json"
+        )
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 400)
@@ -822,6 +877,7 @@ class AuditionTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 404)
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Not Found")
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":

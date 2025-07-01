@@ -46,11 +46,17 @@ def _convert_json_patch_request_to_dict(body: list[dict], model: type[Movie | Ac
     for item in body:
         if not isinstance(item, dict):
             raise TypeError("invalid JSON patch schema")
-        if item["op"] is None or item["op"] not in ["add", "remove"] or (item["op"] == "remove" and "value" in item.keys()):
+        if (
+            item["op"] is None
+            or item["op"] not in ["add", "remove"]
+            or (item["op"] == "remove" and "value" in item.keys())
+        ):
             raise ValueError("invalid JSON patch operation")
         if item["path"] is None or _camel_to_snake(item["path"][1:]) not in [column.name for column in model.__table__.columns]:  # type: ignore
             raise ValueError("invalid JSON patch path")
-        new_dict[_camel_to_snake(item["path"][1:])] = item["value"] if item["op"] != "remove" else None
+        new_dict[_camel_to_snake(item["path"][1:])] = (
+            item["value"] if item["op"] != "remove" else None
+        )
 
     return new_dict
 
@@ -63,8 +69,10 @@ def _create_etag(record: Movie | Actor):
     # Create a SHA-256 hash of the string to use for comparison and as an ETag
     return hashlib.sha256(orig_dict_string.encode()).hexdigest()
 
+
 def _abort_if_falsy_and_not_none(value):
     return not value and value != None
+
 
 def create_app(test_config=None):
 
@@ -119,7 +127,8 @@ def create_app(test_config=None):
     def post_movie():
         body = request.get_json()
         if not (
-            isinstance(body.get("title"), str) and body.get("title")
+            isinstance(body.get("title"), str)
+            and body.get("title")
             and body.get("genre") in (genre.value for genre in Genre)
             and (
                 body.get("releaseDate") is None
@@ -207,7 +216,9 @@ def create_app(test_config=None):
                 except Exception:
                     abort(400)
             if key == "release_date":
-                if (data["release_date"] and not isinstance(data["release_date"], str)) or _abort_if_falsy_and_not_none(data["release_date"]):
+                if (
+                    data["release_date"] and not isinstance(data["release_date"], str)
+                ) or _abort_if_falsy_and_not_none(data["release_date"]):
                     abort(400)
                 try:
                     movie.release_date = (
@@ -218,7 +229,9 @@ def create_app(test_config=None):
                 except Exception:
                     abort(400)
             if key == "poster_url":
-                if (data["poster_url"] and not isinstance(data["poster_url"], str)) or _abort_if_falsy_and_not_none(data["poster_url"]):
+                if (
+                    data["poster_url"] and not isinstance(data["poster_url"], str)
+                ) or _abort_if_falsy_and_not_none(data["poster_url"]):
                     abort(400)
                 movie.poster_url = data["poster_url"]
 
@@ -282,7 +295,8 @@ def create_app(test_config=None):
                 body.get("gender") is None
                 or body.get("gender") in (gender.value for gender in Gender)
             )
-            and isinstance(body.get("age"), int) and body.get("age") > 0
+            and isinstance(body.get("age"), int)
+            and body.get("age") > 0
             and (body.get("photoUrl") is None or isinstance(body.get("photoUrl"), str))
         ):
             abort(400)

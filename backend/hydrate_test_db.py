@@ -64,14 +64,14 @@ def make_movies(app: Flask):
                 "title": "Friday",
                 "id": 10,
                 "genre": "COMEDY",
-                "release_date": "1995-04-26"
+                "release_date": "1995-04-26",
             },
             {
                 "title": "Lilo & Stitch",
                 "id": 11,
                 "genre": "ANIMATION",
-                "release_date": "2002-06-16"
-            }
+                "release_date": "2002-06-16",
+            },
         ]
         objects = [
             Movie(
