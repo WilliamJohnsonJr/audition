@@ -2,6 +2,9 @@
 
 This directory contains the backend for the Capstone project.
 
+## Caveats
+Marshmallow Schemas would be a better choice for a larger project, but I made my own validation logic to reduce dependencies.
+
 # To set up a db
 - `createdb casting`
 

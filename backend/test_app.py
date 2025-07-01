@@ -7,7 +7,7 @@ from sqlalchemy import text, create_engine
 
 from app import create_app
 from models import db, Actor, Movie
-from hydrate_test_db import make_movies, make_actors
+from test.hydrate_test_db import make_movies, make_actors
 
 import json
 
