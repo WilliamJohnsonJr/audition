@@ -6,7 +6,7 @@ import json
 from sqlalchemy import text, create_engine
 
 from app import create_app
-from models import Cast, db, Actor, Movie
+from models import Cast, db
 from tests.hydrate_test_db import make_movies, make_actors
 
 import json
