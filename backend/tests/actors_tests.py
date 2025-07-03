@@ -6,7 +6,7 @@ import json
 from sqlalchemy import text, create_engine
 
 from app import create_app
-from models import db, Actor, Movie
+from models import Cast, db, Actor, Movie
 from tests.hydrate_test_db import make_movies, make_actors
 
 import json
@@ -261,6 +261,28 @@ class ActorTestCase(unittest.TestCase):
                 "gender": "MALE",
                 "id": 1,
                 "movies": [],
+                "name": "Tom Hanks",
+                "photoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
+            },
+        )
+
+    def test_get_actor_with_movies(self):
+        with self.app.app_context():
+            cast = Cast(movie_id=1, actor_id=1)
+            cast.add()
+
+        res = self.client.get("/actors/1")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data["success"])
+        self.assertDictEqual(
+            data["actor"],
+            {
+                "age": 68,
+                "gender": "MALE",
+                "id": 1,
+                "movies": [1],
                 "name": "Tom Hanks",
                 "photoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
             },

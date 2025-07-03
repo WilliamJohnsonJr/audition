@@ -6,7 +6,7 @@ import json
 from sqlalchemy import text, create_engine
 
 from app import create_app
-from models import db, Actor, Movie
+from models import Cast, db, Actor, Movie
 from tests.hydrate_test_db import make_movies, make_actors
 
 import json
@@ -272,6 +272,28 @@ class MovieTestCase(unittest.TestCase):
             data["movie"],
             {
                 "actors": [],
+                "genre": "ACTION_AND_ADVENTURE",
+                "posterUrl": None,
+                "id": 1,
+                "title": "Apollo 13",
+                "releaseDate": "1995-06-30",
+            },
+        )
+
+    def test_get_movie_with_actors(self):
+        with self.app.app_context():
+            cast = Cast(movie_id=1, actor_id=1)
+            cast.add()
+
+        res = self.client.get("/movies/1")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data["success"])
+        self.assertDictEqual(
+            data["movie"],
+            {
+                "actors": [1],
                 "genre": "ACTION_AND_ADVENTURE",
                 "posterUrl": None,
                 "id": 1,

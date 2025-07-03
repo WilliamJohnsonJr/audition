@@ -21,9 +21,11 @@ def _snake_to_camel(snake_case_str: str):
 def _camel_case_dict(item: dict):
     new_item = {}
     for key in item:
-        if isinstance(item[key], list):
+        if isinstance(item[key], list) and len(item[key]) and isinstance(item[key][0], dict):
             new_list = [_camel_case_dict(list_item) for list_item in item[key]]
             new_item[_snake_to_camel(key)] = new_list
+        elif isinstance(item[key], list):
+            new_item[_snake_to_camel(key)] = [list_item for list_item in item[key]]
         elif isinstance(item[key], dict):
             new_item[_snake_to_camel(key)] = _camel_case_dict(item[key])
         else:
