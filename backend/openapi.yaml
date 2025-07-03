@@ -1,0 +1,82 @@
+openapi: "3.1.0"
+info:
+  title: "Audition API"
+  version: "1.0.0"
+  contact:
+    name: Will Johnson
+    email: will@example.com
+    url: https://example.com/
+tags:
+  - name: Actors
+    description: Actor related requests
+paths:
+  /actors:
+    get:
+      operationId: get_actors
+      summary: Get actors, paginated
+      tags: [ 'Actors' ]
+      responses:
+        '200':
+          description: OK
+    post:
+      operationId: post_actor
+      summary: Create actor
+      tags: ['Actors']
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostActorRequest'
+      responses:
+        '201':
+          description: Created
+  /actors/:actor_id:
+    get:
+      operationId: get_actor
+      summary: Get actor by ID
+      tags: ['Actors']
+      responses:
+        '200':
+          description: OK
+    patch:
+      operationId: update_actor
+      summary: PATCH actor
+      tags: ['Actors']
+      responses:
+        '200': 
+          description: OK
+        '204':
+          description: No Content (not modified)
+    delete:
+      operationId: delete_actor
+      summary: DELETE actor
+      tags: ['Actors']
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    PostActorRequest:
+      type: object
+      properties:
+        name:
+          description: Name of the actor
+          type: string
+        age:
+          description: Age of the actor
+          type: integer
+        gender:
+          description: Gender of the actor
+          type: string
+          enum:
+            - MALE
+            - FEMALE
+      required:
+        - name
+        - age
+    Gender:
+      type: string
+      description: Gender enum
+      enum:
+        - MALE
+        - FEMALE
