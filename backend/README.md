@@ -2,6 +2,9 @@
 
 This directory contains the backend for the Capstone project.
 
+## Notes
+- snake_case is used in the python app, but JSON requests and responses to the API all use camelCase properties for the FE.
+
 ## Caveats
 Marshmallow Schemas would be a better choice for a larger project, but I made my own validation logic to reduce dependencies.
 
