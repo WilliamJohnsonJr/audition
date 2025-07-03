@@ -20,4 +20,10 @@ Marshmallow Schemas would be a better choice for a larger project, but I made my
 
 ## Tests
 - `createdb casting_test`
-- `DATABASE_URL=postgresql://postgres@localhost:5432/casting_test python test_app.py`
+- `DATABASE_URL=postgresql://postgres@localhost:5432/casting_test python -m tests.test_app`
+
+To run an individual test case, use the following command:
+`python -m tests.casts_tests`
+
+To create a line-by-line coverage report, run:
+`coverage erase && coverage run -m unittest discover && coverage html`

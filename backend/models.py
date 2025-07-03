@@ -45,9 +45,9 @@ class Actor(db.Model):
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     gender: Mapped[Optional[Gender]] = mapped_column(Enum(Gender))
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    movies = db.relationship("Movie", secondary="casts", back_populates="actors")
     name: Mapped[str] = mapped_column(String, nullable=False)
     photo_url: Mapped[Optional[str]] = mapped_column(String)
-    movies = db.relationship("Movie", secondary="casts", back_populates="actors")
 
     def __init__(
         self, name: str, age: int, photo_url: Optional[str], gender: Optional[Gender]
@@ -65,6 +65,7 @@ class Actor(db.Model):
             "age": self.age,
             "gender": self.gender.value if self.gender else None,
             "id": self.id,
+            "movies": [movie.id for movie in self.movies],  # type: ignore
             "name": self.name,
             "photo_url": self.photo_url,
         }
@@ -90,6 +91,10 @@ class Cast(db.Model):
     actor_id: Mapped[int] = mapped_column(
         db.ForeignKey("actors.id"), nullable=False, primary_key=True
     )
+
+    def __init__(self, movie_id: int, actor_id: int):
+        self.movie_id = movie_id
+        self.actor_id = actor_id
 
     def add(self):
         db.session.add(self)
@@ -144,6 +149,7 @@ class Movie(db.Model):
 
     def format(self):
         return {
+            "actors": [actor.id for actor in self.actors],  # type: ignore
             "genre": self.genre.value,
             "id": self.id,
             "poster_url": self.poster_url,

@@ -2,6 +2,7 @@ alembic==1.16.1
 black==25.1.0
 blinker==1.9.0
 click==8.2.1
+coverage==7.9.1
 Flask==3.1.1
 flask-cors==6.0.0
 Flask-Migrate==4.1.0

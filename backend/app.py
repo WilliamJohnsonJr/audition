@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify
 from actors.actors_controller import actors_controller
+from casts.casts_controller import casts_controller
 from models import setup_db
 from flask_cors import CORS
 from movies.movies_controller import movies_controller
@@ -31,6 +32,8 @@ def create_app(test_config=None):
     movies_controller(app)
 
     actors_controller(app)
+
+    casts_controller(app)
 
     @app.errorhandler(400)
     def bad_request(error):
