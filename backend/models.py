@@ -122,12 +122,12 @@ class Genre(enum.Enum):
 class Movie(db.Model):
     __tablename__ = "movies"
 
+    actors = db.relationship("Actor", secondary="casts", back_populates="movies")
     genre: Mapped[Genre] = mapped_column(Enum(Genre), nullable=False)
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     poster_url: Mapped[Optional[str]] = mapped_column(String)
     release_date: Mapped[Optional[date]] = mapped_column(Date)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    actors = db.relationship("Actor", secondary="casts", back_populates="movies")
 
     def __init__(
         self,
