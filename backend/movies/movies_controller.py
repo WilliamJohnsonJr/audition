@@ -146,7 +146,9 @@ def movies_controller(app: Flask):
                     abort(400)
                 try:
                     movie.release_date = (
-                        datetime.strptime(data["release_date"].strip(), "%Y-%m-%d").date()
+                        datetime.strptime(
+                            data["release_date"].strip(), "%Y-%m-%d"
+                        ).date()
                         if data["release_date"]
                         else None
                     )
@@ -157,7 +159,9 @@ def movies_controller(app: Flask):
                     data["poster_url"] and not isinstance(data["poster_url"], str)
                 ) or _abort_if_falsy_and_not_none(data["poster_url"]):
                     abort(400)
-                movie.poster_url = data["poster_url"].strip() if data["poster_url"] else None
+                movie.poster_url = (
+                    data["poster_url"].strip() if data["poster_url"] else None
+                )
 
         new_hash = _create_etag(movie)
 

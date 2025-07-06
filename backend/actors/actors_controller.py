@@ -130,7 +130,9 @@ def actors_controller(app: Flask):
                     abort(400)
                 if data["photo_url"] and not isinstance(data["photo_url"], str):
                     return abort(400)
-                actor.photo_url = data["photo_url"].strip() if data["photo_url"] else None
+                actor.photo_url = (
+                    data["photo_url"].strip() if data["photo_url"] else None
+                )
 
         new_hash = _create_etag(actor)
 
