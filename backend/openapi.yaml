@@ -550,9 +550,7 @@ components:
           example: true
         actor:
           description: The actor
-          type: array
-          items:
-            $ref: '#/components/schemas/Actor'
+          $ref: '#/components/schemas/Actor'
     GetActorsResponse:
       type: object
       properties:
@@ -581,9 +579,7 @@ components:
           example: true
         actor:
           description: The movie
-          type: array
-          items:
-            $ref: '#/components/schemas/Movie'
+          $ref: '#/components/schemas/Movie'
     GetMoviesResponse:
       type: object
       properties:
