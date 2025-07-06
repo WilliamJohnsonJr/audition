@@ -59,8 +59,13 @@ def movies_controller(app: Flask):
         ):
             abort(400)
 
-        genre = body.get("genre")
-        release_date = body.get("releaseDate", None)
+        title: str = body.get("title")
+        title = title.strip()
+        genre: str = body.get("genre")
+        genre = genre.strip()
+        release_date: str | None = body.get("releaseDate", None)
+        if release_date:
+            release_date = release_date.strip()
         parsed_date: Optional[date] = None
         if release_date:
             try:
@@ -69,7 +74,7 @@ def movies_controller(app: Flask):
                 abort(400)
 
         movie = Movie(
-            title=body.get("title"),
+            title=title,
             genre=(Genre[genre]),
             release_date=(parsed_date if parsed_date else None),
             poster_url=body.get("posterUrl", None),
@@ -126,12 +131,12 @@ def movies_controller(app: Flask):
                 if not data["title"] or not isinstance(data["title"], str):
                     abort(400)
                 else:
-                    movie.title = data["title"]
+                    movie.title = data["title"].strip()
             if key == "genre":
                 if not data["genre"]:
                     abort(400)
                 try:
-                    movie.genre = Genre[data["genre"]]
+                    movie.genre = Genre[data["genre"].strip()]
                 except Exception:
                     abort(400)
             if key == "release_date":
@@ -141,7 +146,7 @@ def movies_controller(app: Flask):
                     abort(400)
                 try:
                     movie.release_date = (
-                        datetime.strptime(data["release_date"], "%Y-%m-%d").date()
+                        datetime.strptime(data["release_date"].strip(), "%Y-%m-%d").date()
                         if data["release_date"]
                         else None
                     )
@@ -152,7 +157,7 @@ def movies_controller(app: Flask):
                     data["poster_url"] and not isinstance(data["poster_url"], str)
                 ) or _abort_if_falsy_and_not_none(data["poster_url"]):
                     abort(400)
-                movie.poster_url = data["poster_url"]
+                movie.poster_url = data["poster_url"].strip() if data["poster_url"] else None
 
         new_hash = _create_etag(movie)
 

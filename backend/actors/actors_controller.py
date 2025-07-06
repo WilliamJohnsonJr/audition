@@ -54,12 +54,16 @@ def actors_controller(app: Flask):
             abort(400)
 
         gender = body.get("gender", None)
+        name: str = body.get("name")
+        photo_url: str | None = body.get("photoUrl", None)
+        if photo_url:
+            photo_url = photo_url.strip()
 
         actor = Actor(
-            name=body.get("name"),
+            name=name.strip(),
             gender=(Gender[gender] if gender else None),
             age=body.get("age"),
-            photo_url=body.get("photoUrl", None),
+            photo_url=photo_url,
         )
 
         actor.add()
@@ -111,7 +115,7 @@ def actors_controller(app: Flask):
                 if not data["name"] or not isinstance(data["name"], str):
                     abort(400)
                 else:
-                    actor.name = data["name"]
+                    actor.name = data["name"].strip()
             if key == "gender":
                 try:
                     actor.gender = Gender[data["gender"]] if data["gender"] else None
@@ -126,7 +130,7 @@ def actors_controller(app: Flask):
                     abort(400)
                 if data["photo_url"] and not isinstance(data["photo_url"], str):
                     return abort(400)
-                actor.photo_url = data["photo_url"]
+                actor.photo_url = data["photo_url"].strip() if data["photo_url"] else None
 
         new_hash = _create_etag(actor)
 

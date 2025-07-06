@@ -15,6 +15,19 @@ paths:
       operationId: get_actors
       summary: Get actors, paginated
       tags: [ 'Actors' ]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            description: The page of results to view
+            example: 2
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: The search term to filter results by (case-insensitive)
+          example: Bobby
       responses:
         '200':
           description: OK
@@ -102,6 +115,14 @@ paths:
       operationId: update_actor
       summary: PATCH actor
       tags: ['Actors']
+      parameters:
+        - in: header
+          name: Content-Type
+          schema:
+            type: string
+            required: true
+            example: application/json-patch+json
+            pattern: ^application\/json\-patch\+json$
       requestBody:
         content:
           application/json-patch+json:
@@ -176,11 +197,92 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse500'
+  /casts:
+    post:
+      operationId: post_cast
+      summary: Create cast assignment
+      tags: ['Casts']
+      headers:
+        Content-Type: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCastRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCastResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse400'
+        '415':
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse415'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse500'
+  /casts/movies/:movie_id/actors/:actor_id:
+    delete:
+      operationId: delete_cast
+      summary: Delete cast assignment
+      tags: ['Casts']
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                id:
+                  type: string
+                  description: A composite ID identifying the cast assignment that was deleted
+                  example: 'movie-1-actor-32'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse404'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse500'
   /movies:
     get:
       operationId: get_movies
       summary: Get movies, paginated
       tags: [ 'Movies' ]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            description: The page of results to view
+            example: 2
+        - in: query
+          name: search
+          schema:
+            type: string
+            description: The search term to filter results by (case-insensitive)
+            example: Star Wars
       responses:
         '200':
           description: OK
@@ -195,7 +297,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse500'
     post:
-      operationId: post_actor
+      operationId: post_movie
       summary: Create movie
       tags: ['Movies']
       requestBody:
@@ -268,6 +370,14 @@ paths:
       operationId: update_movie
       summary: PATCH movie
       tags: ['Movies']
+      parameters:
+        - in: header
+          name: Content-Type
+          schema:
+            type: string
+            required: true
+            example: application/json-patch+json
+            pattern: ^application\/json\-patch\+json$
       requestBody:
         content:
           application/json-patch+json:
@@ -600,6 +710,30 @@ components:
         id:
           description: The id of the actor created
           type: integer
+    PostCastRequest:
+      type: object
+      properties:
+        actor_id:
+          description: The ID of the actor to be assigned
+          type: integer
+          example: 32
+        movie_id:
+          description: The ID of the movie to be assigned
+          type: integer  
+          example: 1
+      required:
+        - actor_id
+        - movie_id
+    PostCastResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        id:
+          description: A composite ID representing the movie and actor cast assignment
+          type: string
+          example: movie-2-actor-31
     PostMovieRequest:
       type: object
       properties:
