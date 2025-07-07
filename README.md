@@ -1,7 +1,7 @@
 # Audition: A Movie Casting App for Casting Agencies
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
-![Audition Logo](./AuditionLogoMedium.png)
+![Audition Logo](./AuditionLogoScreenshot.png)
 
 ![Audition Screenshot](./AuditionScreenshot.png)
 
