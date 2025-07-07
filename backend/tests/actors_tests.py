@@ -7,7 +7,7 @@ from sqlalchemy import text, create_engine
 
 from app import create_app
 from models import Cast, db, Actor
-from tests.hydrate_test_db import make_movies, make_actors
+from utilities.hydrate_db import make_movies, make_actors
 
 import json
 
@@ -282,7 +282,15 @@ class ActorTestCase(unittest.TestCase):
                 "age": 68,
                 "gender": "MALE",
                 "id": 1,
-                "movies": [1],
+                "movies": [
+                    {
+                        "genre": "ACTION_AND_ADVENTURE",
+                        "id": 1,
+                        "posterUrl": None,
+                        "releaseDate": "1995-06-30",
+                        "title": "Apollo 13",
+                    }
+                ],
                 "name": "Tom Hanks",
                 "photoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
             },

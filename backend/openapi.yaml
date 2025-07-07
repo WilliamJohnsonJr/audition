@@ -467,11 +467,40 @@ components:
           description: The ID of the actor
           type: integer
         movies:
-          description: A list of IDs of movies the actor is cast in
+          description: A list of movies the actor is cast in
           type: array
           items:
-            type: integer
-          example: [1, 2, 3]
+            $ref: '#/components/schemas/ActorWithoutMovies'
+          example: [
+                    {
+                        "genre": "ACTION_AND_ADVENTURE",
+                        "id": 1,
+                        "posterUrl": None,
+                        "releaseDate": "1995-06-30",
+                        "title": "Apollo 13",
+                    }
+                ]
+        name:
+          description: First name and surname of the actor, separated by a space
+          type: string
+          example: "John Doe"
+        photoUrl:
+          description: Location of a photo to display for the actor
+          type: string
+          example: "https://example.example"
+    ActorWithoutMovies:
+      type: object
+      description: Actor object with movies omitted to prevent circular references
+      properties:
+        age:
+          description: Age of the actor
+          type: integer
+          example: 30
+        gender:
+          $ref: '#/components/schemas/Gender'
+        id:
+          description: The ID of the actor
+          type: integer
         name:
           description: First name and surname of the actor, separated by a space
           type: string
@@ -603,11 +632,40 @@ components:
       type: object
       properties:
         actors:
-          description: A list of IDs of actors cast in the movie
+          description: A list of actors cast in the movie
           type: array
           items:
-            type: integer
-          example: [1, 30, 42]
+            $ref: '#/components/schemas/ActorWithoutMovies'
+          example: [
+                    {
+                        "age": 68,
+                        "gender": "MALE",
+                        "id": 1,
+                        "name": "Tom Hanks",
+                        "photoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
+                    }
+                ]
+        genre:
+          $ref: '#/components/schemas/Genre'
+        id:
+          description: The ID of the movie
+          type: integer
+        posterUrl:
+          description: The location of a poster image to display for the movie
+          type: string
+          example: "https://example.example"
+        releaseDate:
+          description: ISO-8601 formatted date in the format YYYY-MM-DD
+          type: date
+          example: "1939-08-25"
+        title:
+          description: Title of the movie
+          type: string
+          example: "The Wizard of Oz"
+    MovieWithoutActors:
+      type: object
+      description: Movie with actors omitted to prevent circular references
+      properties:
         genre:
           $ref: '#/components/schemas/Genre'
         id:

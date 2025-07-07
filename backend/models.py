@@ -33,7 +33,6 @@ def setup_db(app: Flask, database_path=database_path):
     migrate.init_app(app, db)
     return app
 
-
 class Gender(enum.Enum):
     MALE = "MALE"
     FEMALE = "FEMALE"
@@ -65,7 +64,17 @@ class Actor(db.Model):
             "age": self.age,
             "gender": self.gender.value if self.gender else None,
             "id": self.id,
-            "movies": [movie.id for movie in self.movies],  # type: ignore
+            "movies": sorted([movie.format_for_collection() for movie in self.movies], key=lambda movie: movie["title"]),  # type: ignore
+            "name": self.name,
+            "photo_url": self.photo_url,
+        }
+    
+    def format_for_collection(self):
+        # Omit movies reference to avoid circular reference and complex queries
+        return {
+            "age": self.age,
+            "gender": self.gender.value if self.gender else None,
+            "id": self.id,
             "name": self.name,
             "photo_url": self.photo_url,
         }
@@ -149,7 +158,21 @@ class Movie(db.Model):
 
     def format(self):
         return {
-            "actors": [actor.id for actor in self.actors],  # type: ignore
+            "actors": sorted([actor.format_for_collection() for actor in self.actors], key=lambda actor: actor["name"]),  # type: ignore
+            "genre": self.genre.value,
+            "id": self.id,
+            "poster_url": self.poster_url,
+            "release_date": (
+                date.strftime(self.release_date, "%Y-%m-%d")
+                if self.release_date
+                else None
+            ),
+            "title": self.title,
+        }
+
+    def format_for_collection(self):
+        # Omit actors reference to avoid circular references and complex queries
+        return {
             "genre": self.genre.value,
             "id": self.id,
             "poster_url": self.poster_url,

@@ -1,7 +1,19 @@
 from flask import Flask
+from models import Actor, Cast, Gender, Genre, Movie
+from flask import Flask
+from models import db
 
-from models import Actor, Gender, Genre, Movie
 
+def hydrate_db(app: Flask):
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.add_all(make_movies(app))
+        db.session.add_all(make_actors(app))
+        db.session.commit()
+        db.session.add_all(make_casts(app))
+        db.session.commit()
+    return app
 
 def make_movies(app: Flask):
     with app.app_context():
@@ -202,5 +214,42 @@ def make_actors(app: Flask):
             )
             for actor in actors
         ]
+
+        return objects
+
+def make_casts(app: Flask):
+    with app.app_context():
+        casts = [
+            {"movie_id": 1, "actor_id": 1},
+            {"movie_id": 2, "actor_id": 16},
+            {"movie_id": 2, "actor_id": 15},
+            {"movie_id": 2, "actor_id": 14},
+            {"movie_id": 3, "actor_id": 5},
+            {"movie_id": 3, "actor_id": 6},
+            {"movie_id": 3, "actor_id": 14},
+            {"movie_id": 4, "actor_id": 6},
+            {"movie_id": 4, "actor_id": 8},
+            {"movie_id": 4, "actor_id": 9},
+            {"movie_id": 4, "actor_id": 10},
+            {"movie_id": 5, "actor_id": 11},
+            {"movie_id": 5, "actor_id": 12},
+            {"movie_id": 5, "actor_id": 13},
+            {"movie_id": 6, "actor_id": 7},
+            {"movie_id": 6, "actor_id": 17},
+            {"movie_id": 7, "actor_id": 2},
+            {"movie_id": 8, "actor_id": 3},
+            {"movie_id": 8, "actor_id": 18},
+            {"movie_id": 8, "actor_id": 19},
+            {"movie_id": 9, "actor_id": 2},
+            {"movie_id": 9, "actor_id": 4},
+        ]
+
+        objects = [
+                Cast(
+                    movie_id=cast["movie_id"],
+                    actor_id=cast["actor_id"],
+                )
+                for cast in casts
+            ]
 
         return objects

@@ -7,7 +7,7 @@ from sqlalchemy import text, create_engine
 
 from app import create_app
 from models import Cast, db, Movie
-from tests.hydrate_test_db import make_movies, make_actors
+from utilities.hydrate_db import make_movies, make_actors
 
 import json
 
@@ -293,7 +293,15 @@ class MovieTestCase(unittest.TestCase):
         self.assertDictEqual(
             data["movie"],
             {
-                "actors": [1],
+                "actors": [
+                    {
+                        "age": 68,
+                        "gender": "MALE",
+                        "id": 1,
+                        "name": "Tom Hanks",
+                        "photoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TomHanksJan2009_crop.jpg/640px-TomHanksJan2009_crop.jpg",
+                    }
+                ],
                 "genre": "ACTION_AND_ADVENTURE",
                 "posterUrl": None,
                 "id": 1,
