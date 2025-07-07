@@ -5,7 +5,6 @@ import logo from './assets/AuditionLogoMedium.png'
 export function HeaderLayout() {
   return (<>
     <div className="flex flex-col">
-      <h1>Audition</h1>
       <div className="flex justify-center">
         <Link component={RouterLink} to="/">
           <img src={logo} alt="AuditionLogo" className='h-24' />

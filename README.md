@@ -3,7 +3,7 @@ Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
 ![Audition Logo](./AuditionLogoScreenshot.png)
 
-![Audition Screenshot](./AuditionScreenshot.png)
+![Audition Screenshot](./AuditionScreenshotNoHeader.png)
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
