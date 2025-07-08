@@ -10,12 +10,13 @@ from utilities.hydrate_db import hydrate_db
 origins = os.environ.get("ORIGINS", "http://localhost:5173")
 seed_db = os.environ.get("HYDRATE_DB", False)
 
+
 def create_app(test_config=None):
 
     app = Flask(__name__)
     if test_config is None:
         setup_db(app)
-        if(seed_db):
+        if seed_db:
             hydrate_db(app)
     else:
         database_path = test_config.get("SQLALCHEMY_DATABASE_URI")

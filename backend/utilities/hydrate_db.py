@@ -15,6 +15,7 @@ def hydrate_db(app: Flask):
         db.session.commit()
     return app
 
+
 def make_movies(app: Flask):
     with app.app_context():
         movies = [
@@ -217,6 +218,7 @@ def make_actors(app: Flask):
 
         return objects
 
+
 def make_casts(app: Flask):
     with app.app_context():
         casts = [
@@ -245,11 +247,11 @@ def make_casts(app: Flask):
         ]
 
         objects = [
-                Cast(
-                    movie_id=cast["movie_id"],
-                    actor_id=cast["actor_id"],
-                )
-                for cast in casts
-            ]
+            Cast(
+                movie_id=cast["movie_id"],
+                actor_id=cast["actor_id"],
+            )
+            for cast in casts
+        ]
 
         return objects

@@ -33,6 +33,7 @@ def setup_db(app: Flask, database_path=database_path):
     migrate.init_app(app, db)
     return app
 
+
 class Gender(enum.Enum):
     MALE = "MALE"
     FEMALE = "FEMALE"
@@ -68,7 +69,7 @@ class Actor(db.Model):
             "name": self.name,
             "photo_url": self.photo_url,
         }
-    
+
     def format_for_collection(self):
         # Omit movies reference to avoid circular reference and complex queries
         return {
