@@ -1,50 +1,36 @@
 import Button from "@mui/material/Button";
-import type { Movie } from "../../models/movie";
+import type { Actor } from "../../models/actor";
 import { useEffect, useState } from "react";
 import { baseUrl } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
 import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
-import { MovieCard } from "./MovieCard";
+import { ActorCard } from "./ActorCard";
 import { Alert, Link, Snackbar } from "@mui/material";
 import { Link as RouterLink } from "react-router";
 
-export default function Movies() {
+export default function Actors() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [privateSearch, setPrivateSearch] = useState("");
   const [pageMax, setPageMax] = useState(1);
-
   const [snackbarMessage, setSnackbarMessage] = useState("");
+
   const { data, refresh, error, isLoading } = useDataLoader<{
-    movies: Movie[];
-    totalMovies: number;
+    actors: Actor[];
+    totalActors: number;
     success: boolean;
     offset: number;
-  }>(`${baseUrl}/movies?page=${page}&search=${search}`, {
-    movies: [],
-    totalMovies: 0,
+  }>(`${baseUrl}/actors?page=${page}&search=${search}`, {
+    actors: [],
+    totalActors: 0,
     success: true,
     offset: 0,
   });
 
-  async function deleteMovie(id: number) {
-    try {
-      const res = await fetch(`${baseUrl}/movies/${id}`, { method: "DELETE" });
-      if (res.ok && res.status < 400) {
-        setSnackbarMessage(`${res.status}: ${res.statusText}`);
-        refresh();
-      } else {
-        setSnackbarMessage(`${res.status}: ${res.statusText}`);
-      }
-    } catch {
-      setSnackbarMessage("Error occurred - please try again.");
-    }
-  }
-
   useEffect(() => {
-    setPageMax(Math.ceil(data.totalMovies / 10) || 1);
-  }, [page, data.totalMovies]);
+    setPageMax(Math.ceil(data.totalActors / 10) || 1);
+  }, [page, data.totalActors]);
 
   useEffect(() => {
     if (error?.message) {
@@ -58,6 +44,20 @@ export default function Movies() {
 
   function handleSearch(val: string = "") {
     setPrivateSearch(val);
+  }
+
+  async function deleteActor(id: number) {
+    try {
+      const res = await fetch(`${baseUrl}/actors/${id}`, { method: "DELETE" });
+      if (res.ok && res.status < 400) {
+        setSnackbarMessage(`${res.status}: ${res.statusText}`);
+        refresh();
+      } else {
+        setSnackbarMessage(`${res.status}: ${res.statusText}`);
+      }
+    } catch {
+      setSnackbarMessage("Error occurred - please try again.");
+    }
   }
 
   return (
@@ -90,16 +90,16 @@ export default function Movies() {
         )}
       </Snackbar>
       <div className="flex-auto justify-center mb-5">
-        <Link component={RouterLink} to={`/movies/add`}>
+        <Link component={RouterLink} to={`/actors/add`}>
           <Button type="button" size="small">
-            Add Movie
+            Add Actor
           </Button>
         </Link>
       </div>
       <div className="flex-auto justify-center mb-5">
         <TextField
-          id="search-movie-text-field"
-          label="Movie Search"
+          id="search-actor-text-field"
+          label="Actor Search"
           variant="outlined"
           onChange={(event) => handleSearch(event.target.value)}
         />
@@ -111,7 +111,7 @@ export default function Movies() {
           Search
         </Button>
       </div>
-      {data.totalMovies > 0 && (
+      {data.totalActors > 0 && (
         <p className="mb-5">
           Page {page} of {pageMax}
         </p>
@@ -128,7 +128,7 @@ export default function Movies() {
         <Button
           className="ml-2"
           type="button"
-          disabled={page === pageMax}
+          disabled={page <= pageMax}
           onClick={() => setPage(page + 1)}
         >
           Next
@@ -144,16 +144,16 @@ export default function Movies() {
           <br></br>
           <Skeleton variant="rounded" width={350} height={300} />
         </>
-      ) : data && !!data.movies.length ? (
+      ) : data && !!data.actors.length ? (
         <ul className="list-none">
-          {data.movies.map((movie: Movie) => (
-            <li className="inline-flex mb-10 mx-2" key={movie.id}>
-              <MovieCard movie={movie} deleteMovie={deleteMovie} />
+          {data.actors.map((actor: Actor) => (
+            <li className="inline-flex mb-10 mx-2" key={actor.id}>
+              <ActorCard actor={actor} deleteActor={deleteActor} />
             </li>
           ))}
         </ul>
       ) : (
-        "No movies found"
+        "No actors found"
       )}
     </>
   );

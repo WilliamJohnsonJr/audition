@@ -10,4 +10,4 @@ export interface Actor {
   photoUrl?: string; // https://example.example
 }
 
-export type ActorOnly = Omit<Actor, 'movies'>
+export type ActorOnly = Omit<Actor, "movies">;

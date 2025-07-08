@@ -1,11 +1,26 @@
-import { Button, Card, CardActions, CardContent, CardMedia, Link, Typography } from "@mui/material";
-import { Link as RouterLink, useParams } from 'react-router';
+import {
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  Link,
+  Typography,
+} from "@mui/material";
+import { Link as RouterLink, useParams } from "react-router";
 import type { MovieOnly } from "../../models/movie";
 import { format, parseISO } from "date-fns";
-import filmReel from '../../assets/film-reel-optimized.webp';
+import filmReel from "../../assets/film-reel-optimized.webp";
 
-export function MovieCard({ movie }: { movie: MovieOnly }) {
-  const { movieId } = useParams()
+export function MovieCard({
+  movie,
+  deleteMovie,
+}: {
+  movie: MovieOnly;
+  deleteMovie?: (id: number) => void;
+}) {
+  const { movieId } = useParams();
+
   return (
     <Card sx={{ width: 350 }}>
       {movie.posterUrl && !movie.posterUrl.includes("example.example") ? (
@@ -33,12 +48,23 @@ export function MovieCard({ movie }: { movie: MovieOnly }) {
         </Typography>
       </CardContent>
       <CardActions className="flex-auto justify-center">
-        {!movieId && <Link component={RouterLink} to={`/movies/${movie.id}`}>
-          <Button type="button" size="small">View</Button>
-        </Link>}
+        {!movieId && (
+          <Link component={RouterLink} to={`/movies/${movie.id}`}>
+            <Button type="button" size="small">
+              View
+            </Button>
+          </Link>
+        )}
         <Link component={RouterLink} to={`/movies/${movie.id}/edit`}>
-          <Button type="button" size="small">Edit</Button>
+          <Button type="button" size="small">
+            Edit
+          </Button>
         </Link>
+        {deleteMovie && (
+          <Button type="button" onClick={() => deleteMovie(movie.id)}>
+            Delete
+          </Button>
+        )}
       </CardActions>
     </Card>
   );

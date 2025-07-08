@@ -1,10 +1,24 @@
-import { Button, Card, CardActions, CardContent, CardMedia, Link, Typography } from "@mui/material";
-import { Link as RouterLink, useParams } from 'react-router';
-import silouette from '../../assets/silouette-optimized.webp'
+import {
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  Link,
+  Typography,
+} from "@mui/material";
+import { Link as RouterLink, useParams } from "react-router";
+import silouette from "../../assets/silouette-optimized.webp";
 import type { ActorOnly } from "../../models/actor";
 
-export function ActorCard({ actor }: { actor: ActorOnly }) {
-  const { actorId } = useParams()
+export function ActorCard({
+  actor,
+  deleteActor,
+}: {
+  actor: ActorOnly;
+  deleteActor?: (id: number) => void;
+}) {
+  const { actorId } = useParams();
   return (
     <Card sx={{ width: 350 }}>
       {actor.photoUrl && !actor.photoUrl.includes("example.example") ? (
@@ -34,12 +48,23 @@ export function ActorCard({ actor }: { actor: ActorOnly }) {
         </Typography>
       </CardContent>
       <CardActions className="flex-auto justify-center">
-        {!actorId && <Link component={RouterLink} to={`/actors/${actor.id}`}>
-          <Button type="button" size="small">View</Button>
-        </Link>}
+        {!actorId && (
+          <Link component={RouterLink} to={`/actors/${actor.id}`}>
+            <Button type="button" size="small">
+              View
+            </Button>
+          </Link>
+        )}
         <Link component={RouterLink} to={`/actors/${actor.id}/edit`}>
-          <Button type="button" size="small">Edit</Button>
+          <Button type="button" size="small">
+            Edit
+          </Button>
         </Link>
+        {deleteActor && (
+          <Button type="button" onClick={() => deleteActor(actor.id)}>
+            Delete
+          </Button>
+        )}
       </CardActions>
     </Card>
   );

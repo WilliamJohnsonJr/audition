@@ -2,7 +2,7 @@ import type { Actor } from "./actor";
 import type { Genre } from "./genre";
 
 export interface Movie {
-  actors: Omit<Actor, 'movies'>[];
+  actors: Omit<Actor, "movies">[];
   genre: Genre;
   id: number;
   posterUrl?: string; // https://example.example,
@@ -10,4 +10,4 @@ export interface Movie {
   title: string;
 }
 
-export type MovieOnly = Omit<Movie, 'actors'>;
+export type MovieOnly = Omit<Movie, "actors">;

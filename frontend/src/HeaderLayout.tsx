@@ -1,17 +1,18 @@
-import { Link as RouterLink, Outlet } from 'react-router'
-import { Link } from '@mui/material'
-import logo from './assets/AuditionLogoMedium.png'
+import { Link as RouterLink, Outlet } from "react-router";
+import { Link } from "@mui/material";
+import logo from "./assets/AuditionLogoMedium.png";
 
 export function HeaderLayout() {
-  return (<>
-    <div className="flex flex-col">
-      <div className="flex justify-center">
-        <Link component={RouterLink} to="/">
-          <img src={logo} alt="AuditionLogo" className='h-24' />
-        </Link>
+  return (
+    <>
+      <div className="flex flex-col">
+        <div className="flex justify-center">
+          <Link component={RouterLink} aria-label="Home" to="/">
+            <img src={logo} alt="AuditionLogo" className="h-24" />
+          </Link>
+        </div>
       </div>
-    </div>
-    <Outlet />
-  </>)
-
+      <Outlet />
+    </>
+  );
 }

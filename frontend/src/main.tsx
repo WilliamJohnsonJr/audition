@@ -12,9 +12,15 @@ import GlobalStyles from "@mui/material/GlobalStyles";
 import Movies from "./components/movies/Movies.tsx";
 import { theme } from "./theme.ts";
 import ViewMovie from "./components/movies/ViewMovie.tsx";
-import Actors from "./components/movies/Actors.tsx";
-import ViewActor from "./components/movies/ViewActor.tsx";
+import Actors from "./components/actors/Actors.tsx";
+import ViewActor from "./components/actors/ViewActor.tsx";
 import { HeaderLayout } from "./HeaderLayout.tsx";
+import EditMovie from "./components/movies/EditMovie.tsx";
+import NotFound from "./components/not-found/NotFound.tsx";
+import AddMovie from "./components/movies/AddMovie.tsx";
+import AddActor from "./components/actors/AddActor.tsx";
+import EditActor from "./components/actors/EditActor.tsx";
+import AssignCast from "./components/casts/AssignCast.tsx";
 
 const root = document.getElementById("root");
 
@@ -31,21 +37,23 @@ if (root) {
                 <Route path="movies">
                   <Route index element={<Movies />} />
                   <Route path=":movieId" element={<ViewMovie />} />
-                {/* <Route path=":id/edit" element={<EditMovie />} />
-                <Route path="add" element={<AddMovie />} /> */}
+                  <Route path=":movieId/edit" element={<EditMovie />} />
+                  <Route path="add" element={<AddMovie />} />
                 </Route>
                 <Route path="actors">
-                <Route index element={<Actors />} />
-                <Route path=":actorId" element={<ViewActor />} />
-                {/* <Route path=":id/edit" element={<EditActor />} />
-                <Route path="add" element={<AddActor />} /> */}
+                  <Route index element={<Actors />} />
+                  <Route path=":actorId" element={<ViewActor />} />
+                  <Route path=":id/edit" element={<EditActor />} />
+                  <Route path="add" element={<AddActor />} />
                 </Route>
+                <Route path="casts" element={<AssignCast />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
           </BrowserRouter>
         </ThemeProvider>
       </StyledEngineProvider>
-    </StrictMode>
+    </StrictMode>,
   );
 } else {
   throw new Error("No root found.");

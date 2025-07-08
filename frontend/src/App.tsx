@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import "./App.css";
 import { Button, Link } from "@mui/material";
-import logo from "./assets/AuditionLogoMedium.png"
+import logo from "./assets/AuditionLogoMedium.png";
 
 function App() {
   return (
@@ -12,13 +12,18 @@ function App() {
       </div>
       <div className="flex-auto">
         <Link component={RouterLink} to="/movies">
-          <Button type="button" className="mr-5" >
+          <Button type="button" className="mr-5">
             Movies
           </Button>
         </Link>
         <Link component={RouterLink} to="/actors">
           <Button type="button" className="ml-5">
             Actors
+          </Button>
+        </Link>
+        <Link component={RouterLink} to="/casts">
+          <Button type="button" className="ml-5">
+            Casts
           </Button>
         </Link>
       </div>
