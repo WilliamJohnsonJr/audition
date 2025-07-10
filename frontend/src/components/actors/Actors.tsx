@@ -9,7 +9,7 @@ import { ActorCard } from "./ActorCard";
 import { Alert, Link, Snackbar } from "@mui/material";
 import { Link as RouterLink } from "react-router";
 
-export default function Actors() {
+export function Actors() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [privateSearch, setPrivateSearch] = useState("");
@@ -90,17 +90,11 @@ export default function Actors() {
         )}
       </Snackbar>
       <div className="flex-auto justify-center mb-5">
-        <Link component={RouterLink} to={`/actors/add`}>
-          <Button type="button" size="small">
-            Add Actor
-          </Button>
-        </Link>
-      </div>
-      <div className="flex-auto justify-center mb-5">
         <TextField
           id="search-actor-text-field"
           label="Actor Search"
           variant="outlined"
+          className="w-1/2"
           onChange={(event) => handleSearch(event.target.value)}
         />
         <Button
@@ -109,6 +103,9 @@ export default function Actors() {
           onClick={() => setSearch(privateSearch)}
         >
           Search
+        </Button>
+        <Button href={`/actors/add`} variant="contained" className="ml-5">
+            Add Actor
         </Button>
       </div>
       {data.totalActors > 0 && (
@@ -128,7 +125,7 @@ export default function Actors() {
         <Button
           className="ml-2"
           type="button"
-          disabled={page <= pageMax}
+          disabled={page === pageMax}
           onClick={() => setPage(page + 1)}
         >
           Next

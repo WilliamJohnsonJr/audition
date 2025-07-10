@@ -15,40 +15,27 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { Gender } from "../../models/gender";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-export default function AddActor() {
+export function AddActor() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [gender, setGender] = useState<Gender>(Gender.MALE);
-  useEffect(() => {
-    formik.setFieldValue("gender", gender);
-  }, [gender]);
-
-  function handleChange(event: SelectChangeEvent<Gender>) {
-    setGender(event.target.value);
-  }
-
-  function handleClose() {
-    setSnackbarMessage("");
-  }
 
   const validationSchema = yup.object({
     name: yup.string().min(1).required("Name is required"),
     gender: yup
       .string()
-      .oneOf(Object.values(Gender))
-      .required("Gender is required"),
-    pictureUrl: yup.string().url(),
+      .oneOf(Object.values(Gender)),
+    photoUrl: yup.string().url(),
     age: yup.number().min(1).required("Age is required"),
   });
 
   const formik = useFormik({
     initialValues: {
       name: "",
-      gender: gender,
-      pictureUrl: "",
+      gender: "",
+      photoUrl: "",
       age: 0,
     },
     validationSchema: validationSchema,
@@ -58,6 +45,13 @@ export default function AddActor() {
         return;
       }
 
+      const request = {
+        name: values.name,
+        gender: values.gender,
+        photoUrl: values.photoUrl,
+        age: +values.age,
+      };
+
       try {
         setSubmitting(true);
         const res = await fetch(`${baseUrl}/actors`, {
@@ -65,7 +59,7 @@ export default function AddActor() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(values),
+          body: JSON.stringify(request),
         });
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
         if (res.status < 400) {
@@ -79,6 +73,14 @@ export default function AddActor() {
       }
     },
   });
+
+  function handleChange(event: SelectChangeEvent<Gender | string>) {
+    formik.setFieldValue("gender", event.target.value);
+  }
+
+  function handleClose() {
+    setSnackbarMessage("");
+  }
 
   return (
     <>
@@ -109,9 +111,6 @@ export default function AddActor() {
         )}
       </Snackbar>
       <div>
-        <Button type="button" onClick={() => navigate(-1)} className="mb-5">
-          Back
-        </Button>
         <form onSubmit={formik.handleSubmit}>
           <TextField
             fullWidth
@@ -132,8 +131,10 @@ export default function AddActor() {
             </InputLabel>
             <Select
               fullWidth
+              id="gender"
               label="Gender"
-              value={gender}
+              name="gender"
+              value={formik.values.gender}
               onChange={handleChange}
               onBlur={formik.handleBlur}
               error={formik.touched.gender && Boolean(formik.errors.gender)}
@@ -141,7 +142,9 @@ export default function AddActor() {
               inputProps={{ "aria-label": "Gender" }}
             >
               {Object.values(Gender).map((g) => (
-                <MenuItem value={g}>{g}</MenuItem>
+                <MenuItem value={g} key={g}>
+                  {g}
+                </MenuItem>
               ))}
             </Select>
             <FormHelperText>
@@ -150,17 +153,15 @@ export default function AddActor() {
           </FormControl>
           <TextField
             fullWidth
-            id="picture-url"
+            id="photo-url"
             className="mb-5"
-            name="pictureUrl"
-            label="Picture URL"
-            value={formik.values.pictureUrl}
+            name="photoUrl"
+            label="Photo URL"
+            value={formik.values.photoUrl}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            error={
-              formik.touched.pictureUrl && Boolean(formik.errors.pictureUrl)
-            }
-            helperText={formik.touched.pictureUrl && formik.errors.pictureUrl}
+            error={formik.touched.photoUrl && Boolean(formik.errors.photoUrl)}
+            helperText={formik.touched.photoUrl && formik.errors.photoUrl}
           />
           <TextField
             fullWidth

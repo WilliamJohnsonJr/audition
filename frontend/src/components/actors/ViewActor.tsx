@@ -8,14 +8,15 @@ import type { Actor } from "../../models/actor";
 import type { Movie } from "../../models/movie";
 import { MovieCard } from "../movies/MovieCard";
 import { useEffect, useState } from "react";
-import { Alert, Snackbar } from "@mui/material";
+import { Alert, Snackbar, Typography } from "@mui/material";
 
-export default function ViewActor() {
+export function ViewActor() {
   const { actorId } = useParams();
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
-  const { data, error, isLoading } = useDataLoader<{
+  const { data, refresh, error, isLoading } = useDataLoader<{
     actor?: Actor;
     success: boolean;
   }>(`${baseUrl}/actors/${actorId}`, {
@@ -24,16 +25,37 @@ export default function ViewActor() {
   });
 
   async function deleteActor(id: number) {
+    setSubmitting(true);
     try {
-      const res = await fetch(`${baseUrl}/movies/${id}`, { method: "DELETE" });
+      const res = await fetch(`${baseUrl}/actors/${id}`, { method: "DELETE" });
       if (res.ok && res.status < 400) {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
-        navigate("/movies");
+        navigate("/actors");
       } else {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
       }
     } catch {
       setSnackbarMessage("Error occurred - please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function unassignCasting(movieId: number) {
+    setSubmitting(true);
+    try {
+      const res = await fetch(
+        `${baseUrl}/casts/movies/${movieId}/actors/${actorId}`,
+        { method: "DELETE" }
+      );
+      setSnackbarMessage(`${res.status}: ${res.statusText}`);
+      if (res.status < 400) {
+        refresh();
+      }
+    } catch {
+      setSnackbarMessage("Error occurred - please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -84,24 +106,38 @@ export default function ViewActor() {
           Back
         </Button>
       </div>
-      <div className="flex-auto justify-center mb-5">
-        <h2>{data.actor?.name}</h2>
-      </div>
       {isLoading ? (
         <>
           <Skeleton variant="rounded" width={350} height={700} />
         </>
       ) : data.actor ? (
-        <>
+          <>
+          <Typography
+            variant="h1"
+            color="primary.main"
+            className="my-5 border-2 rounded-xl"
+          >
+            {data.actor.name}
+          </Typography>
           <div className="flex justify-center">
             <ActorCard actor={data.actor} deleteActor={deleteActor} />
           </div>
-          <h2>Movies:</h2>
+          <Typography
+            variant="h2"
+            color="secondary.main"
+            className="my-5 border-2 rounded-xl"
+          >
+            Movies
+          </Typography>
           <ul className="list-none">
             {data.actor?.movies.length
               ? data.actor?.movies.map((movie: Omit<Movie, "actors">) => (
                   <li className="inline-flex mb-10 mx-2" key={movie.id}>
-                    <MovieCard movie={movie} />
+                    <MovieCard
+                      movie={movie}
+                      unassignCasting={unassignCasting}
+                      submitting={submitting}
+                    />
                   </li>
                 ))
               : "No Movies Assigned"}

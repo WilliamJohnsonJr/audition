@@ -20,15 +20,11 @@ import {
 import { Gender } from "../../models/gender";
 import { useEffect, useState } from "react";
 
-export default function EditActor() {
+export function EditActor() {
   const { actorId } = useParams();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [gender, setGender] = useState<Gender>();
-  useEffect(() => {
-    formik.setFieldValue("gender", gender);
-  }, [gender]);
 
   const { data, error, isLoading } = useDataLoader<{
     actor?: Actor;
@@ -38,32 +34,9 @@ export default function EditActor() {
     success: true,
   });
 
-  useEffect(() => {
-    if (error?.message?.includes("404")) {
-      navigate("/not-found");
-    }
-    if (error?.message) {
-      setSnackbarMessage(error.message);
-    }
-    if (data.actor?.gender) {
-      setGender(data.actor.gender);
-    }
-  }, [data, error]);
-
-  function handleChange(event: SelectChangeEvent<Gender>) {
-    setGender(event.target.value);
-  }
-
-  function handleClose() {
-    setSnackbarMessage("");
-  }
-
   const validationSchema = yup.object({
     name: yup.string().min(1).required("Name is required"),
-    gender: yup
-      .string()
-      .oneOf(Object.values(Gender))
-      .required("Gender is required"),
+    gender: yup.string().oneOf(["", ...Object.values(Gender)]),
     photoUrl: yup.string().url(),
     age: yup.number().min(1).required("Age is required"),
   });
@@ -71,7 +44,7 @@ export default function EditActor() {
   const formik = useFormik({
     initialValues: {
       name: data.actor?.name || "",
-      gender: gender,
+      gender: data.actor?.gender || "",
       photoUrl: data.actor?.photoUrl || "",
       age: data.actor?.age || "",
     },
@@ -126,6 +99,26 @@ export default function EditActor() {
     },
   });
 
+  useEffect(() => {
+    if (error?.message?.includes("404")) {
+      navigate("/not-found");
+    }
+    if (error?.message) {
+      setSnackbarMessage(error.message);
+    }
+    if (data.actor?.gender) {
+      formik.setFieldValue("gender", data.actor.gender);
+    }
+  }, [data, error]);
+
+  function handleChange(event: SelectChangeEvent<Gender | string>) {
+    formik.setFieldValue("gender", event.target.value);
+  }
+
+  function handleClose() {
+    setSnackbarMessage("");
+  }
+
   return (
     <>
       <Snackbar
@@ -159,9 +152,6 @@ export default function EditActor() {
       {!isLoading ? (
         <div>
           <div>{snackbarMessage}</div>
-          <Button type="button" onClick={() => navigate(-1)} className="mb-5">
-            Back
-          </Button>
           <form onSubmit={formik.handleSubmit}>
             <TextField
               fullWidth
@@ -183,14 +173,14 @@ export default function EditActor() {
               <Select
                 fullWidth
                 label="Gender"
-                value={gender}
+                value={formik.values.gender}
                 onChange={handleChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.gender && Boolean(formik.errors.gender)}
                 displayEmpty
                 inputProps={{ "aria-label": "Gender" }}
               >
-                <MenuItem value={undefined} key="None">
+                <MenuItem value={""} key="None">
                   None
                 </MenuItem>
                 {Object.values(Gender).map((g) => (

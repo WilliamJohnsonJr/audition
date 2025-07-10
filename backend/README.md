@@ -17,7 +17,7 @@ Marshmallow Schemas would be a better choice for a larger project, but I made my
 - `python3 -m .venv venv`
 - `source .venv/bin/activate`
 - `pip install -r requirements.txt`
-- `DATABASE_URL=postgresql://postgres@localhost:5432/casting python app.py`
+- `HYDRATE_DB=false DATABASE_URL=postgresql://postgres@localhost:5432/casting python app.py`
 
 ## To run production locally in a container
 - `docker build -t capstone . --platform linux/amd64`

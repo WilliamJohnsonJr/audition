@@ -8,14 +8,16 @@ import { ActorCard } from "../actors/ActorCard";
 import type { Actor } from "../../models/actor";
 import { MovieCard } from "./MovieCard";
 import { useEffect, useState } from "react";
-import { Alert, Snackbar } from "@mui/material";
+import { Alert, Snackbar, Typography } from "@mui/material";
+import { theme } from '../../theme';
 
-export default function ViewMovie() {
+export function ViewMovie() {
   const { movieId } = useParams();
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
-  const { data, error, isLoading } = useDataLoader<{
+  const { data, refresh, error, isLoading } = useDataLoader<{
     movie?: Movie;
     success: boolean;
   }>(`${baseUrl}/movies/${movieId}`, {
@@ -34,6 +36,23 @@ export default function ViewMovie() {
       }
     } catch {
       setSnackbarMessage("Error occurred - please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function unassignCasting(actorId: number) {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${baseUrl}/casts/movies/${movieId}/actors/${actorId}`, { method: "DELETE" });
+      setSnackbarMessage(`${res.status}: ${res.statusText}`);
+      if (res.status < 400) {
+        refresh()
+      }
+    } catch {
+      setSnackbarMessage("Error occurred - please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -79,30 +98,31 @@ export default function ViewMovie() {
           </Alert>
         )}
       </Snackbar>
-      <div className="flex-auto justify-center mb-5">
-        <Button type="button" onClick={() => navigate(-1)}>
-          Back
-        </Button>
-      </div>
-      <div className="flex-auto justify-center mb-5">
-        <h2>{data.movie?.title}</h2>
-      </div>
       {isLoading ? (
         <>
           <Skeleton variant="rounded" width={350} height={700} />
         </>
       ) : data.movie ? (
-        <>
+          <>
+          <Typography
+            variant="h1"
+            color="primary.main"
+            className="my-5 border-2 rounded-xl"
+          >
+            {data.movie.title}
+          </Typography>
           <div className="flex justify-center">
             <MovieCard movie={data.movie} deleteMovie={deleteMovie} />
           </div>
           <div>
-            <h2>Cast:</h2>
+            <Typography variant="h2" color="secondary.main" className="my-5 border-2 rounded-xl">
+              Cast
+            </Typography>
             <ul className="list-none">
               {data.movie?.actors.length
                 ? data.movie?.actors.map((actor: Omit<Actor, "movies">) => (
                     <li className="inline-flex mb-10 mx-2" key={actor.id}>
-                      <ActorCard actor={actor} />
+                      <ActorCard actor={actor} unassignCasting={unassignCasting} submitting={submitting} />
                     </li>
                   ))
                 : "No Cast Assigned"}

@@ -24,48 +24,56 @@ def make_movies(app: Flask):
                 "genre": "ACTION_AND_ADVENTURE",
                 "release_date": "1995-06-30",
                 "title": "Apollo 13",
+                "poster_url": "https://images.unsplash.com/photo-1571842068535-9d7c7c1ddb18?q=80&w=1128&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "id": 2,
                 "genre": "SCI_FI",
                 "release_date": "1997-07-11",
                 "title": "Contact",
+                "poster_url": "https://images.unsplash.com/photo-1702485665912-0c79685081e1?q=80&w=1548&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "id": 3,
                 "genre": "SCI_FI",
                 "release_date": "2018-02-16",
                 "title": "Black Panther",
+                "poster_url": "https://images.unsplash.com/photo-1557692538-9564c4b2cd13?q=80&w=930&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "id": 4,
                 "genre": "FANTASY",
                 "release_date": "2001-12-19",
                 "title": "The Lord of the Rings: The Fellowship of the Ring",
+                "poster_url": "https://images.unsplash.com/photo-1652258249953-729e2bd7d1aa?q=80&w=2104&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "id": 5,
                 "genre": "ACTION_AND_ADVENTURE",
                 "release_date": "2021-11-12",
                 "title": "Red Notice",
+                "poster_url": "https://images.unsplash.com/photo-1627343193702-7a2ac2ca3134?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "id": 6,
                 "title": "Top Gun",
                 "genre": "ACTION_AND_ADVENTURE",
                 "release_date": "1986-05-16",
+                "poster_url": "https://images.unsplash.com/photo-1689539157799-da497cf0dd04?q=80&w=1548&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "title": "Star Wars: Episode I - The Phantom Menace",
                 "id": 7,
                 "genre": "SCI_FI",
                 "release_date": "1999-05-19",
+                "poster_url": "https://images.unsplash.com/photo-1745383586468-13f3a24ffe8b?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "title": "Once Upon a Time in Mexico",
                 "id": 8,
                 "genre": "ACTION_AND_ADVENTURE",
                 "release_date": "2003-09-12",
+                "poster_url": "https://images.unsplash.com/photo-1729638276657-0a0978e66d38?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             },
             {
                 "title": "The Avengers",
@@ -89,7 +97,7 @@ def make_movies(app: Flask):
         objects = [
             Movie(
                 genre=Genre[movie["genre"]],
-                poster_url=None,
+                poster_url=movie.get("poster_url", None),
                 release_date=movie["release_date"],
                 title=movie["title"],
             )

@@ -7,7 +7,7 @@ from flask_cors import CORS
 from movies.movies_controller import movies_controller
 from utilities.hydrate_db import hydrate_db
 
-origins = os.environ.get("ORIGINS", "http://localhost:5173")
+origins = os.environ.get("ORIGINS", ["http://localhost:5173"])
 seed_db = os.environ.get("HYDRATE_DB", False)
 
 

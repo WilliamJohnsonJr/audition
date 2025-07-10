@@ -6,12 +6,14 @@ from utilities.utilities import (
     _convert_json_patch_request_to_dict,
     _create_etag,
 )
+from auth.validator import require_auth
 
 ACTORS_PER_PAGE = 10
 
 
 def actors_controller(app: Flask):
     @app.route("/actors", methods=["GET"])
+    @require_auth("read:actors")
     def get_actors():
         page = request.args.get("page", 1, type=int)
         filter_by = request.args.get("search", "", type=str)
@@ -39,6 +41,7 @@ def actors_controller(app: Flask):
         )
 
     @app.route("/actors", methods=["POST"])
+    @require_auth("create:actors")
     def post_actor():
         body = request.get_json()
         if not (
@@ -70,6 +73,7 @@ def actors_controller(app: Flask):
         return jsonify({"success": True, "id": actor.id}), 201
 
     @app.route("/actors/<int:actor_id>", methods=["GET"])
+    @require_auth("read:actors")
     def get_actor(actor_id: int):
         if not isinstance(actor_id, int):
             abort(400)
@@ -88,6 +92,7 @@ def actors_controller(app: Flask):
     #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] }
     #    ]
     @app.route("/actors/<int:actor_id>", methods=["PATCH"])
+    @require_auth("update:actors")
     def update_actor(actor_id: int):
         if not isinstance(actor_id, int):
             abort(400)
@@ -147,6 +152,7 @@ def actors_controller(app: Flask):
             return response
 
     @app.route("/actors/<int:actor_id>", methods=["DELETE"])
+    @require_auth("delete:actors")
     def delete_actor(actor_id: int):
         if not isinstance(actor_id, int):
             abort(400)

@@ -1,214 +1,126 @@
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
-import CircularProgress from "@mui/material/CircularProgress";
-import type { Movie } from "../../models/movie";
-import { useDataLoader } from "../../shared/data-loader";
+import { useState, type SyntheticEvent } from "react";
+import { Alert, Button, Snackbar } from "@mui/material";
+import { ActorAutosearch } from "./ActorAutosearch";
+import { MovieAutosearch } from "./MovieAutosearch";
+import { useFormik } from "formik";
+import * as yup from "yup";
 import { baseUrl } from "../../shared/base-url";
-import { useCallback, useEffect, useState } from "react";
-import { Button, debounce } from "@mui/material";
-import type { Actor } from "../../models/actor";
+import { useNavigate } from "react-router";
 
-function MoviesAutosearch() {
-  const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<
-    readonly { label: string; id: number }[]
-  >([]);
-  const [search, setSearch] = useState("");
-  const { data, refresh, error, isLoading } = useDataLoader<{
-    movies: Movie[];
-    totalMovies: number;
-    success: boolean;
-    offset: number;
-  }>(`${baseUrl}/movies?page=1&search=${search}`, {
-    movies: [],
-    totalMovies: 0,
-    success: true,
-    offset: 0,
+export function AssignCast() {
+  const [submitting, setSubmitting] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const navigate = useNavigate();
+  function handleClose() {
+    setSnackbarMessage("");
+  }
+  const validationSchema = yup.object({
+    movie: yup
+      .object({ label: yup.string().required(), id: yup.number().required() })
+      .required("Movie is required"),
+    actor: yup
+      .object({ label: yup.string().required(), id: yup.number().required() })
+      .required("Actor is required"),
   });
 
-  function filterOptions() {
-    return data.movies.map((movie: Movie) => ({
-      id: movie.id,
-      label: movie.title,
-    }));
-  }
+  const formik = useFormik({
+    initialValues: {
+      movie: null as null | { label: string; id: number },
+      actor: null as null | { label: string; id: number },
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      if (submitting) {
+        return;
+      }
+      if (!values.movie || !values.actor) {
+        throw new Error("Values not provided");
+      }
+      const request = {
+        movieId: values.movie.id,
+        actorId: values.actor.id,
+      };
+      try {
+        setSubmitting(true);
+        const res = await fetch(`${baseUrl}/casts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(request),
+        });
+        setSnackbarMessage(`${res.status}: ${res.statusText}`);
 
-  function handleChange(val: string = "") {
-    setSearch(val);
-  }
-
-  const debouncedSetSearch = useCallback(
-    debounce((event) => handleChange(event.target.value), 500),
-    [],
-  );
-
-  useEffect(() => {
-    if (!search) {
-      setOpen(false);
-    } else {
-      setOpen(true);
-    }
-  }, [search]);
-
-  const handleOpen = () => {
-    if (search) {
-      setOpen(true);
-      setOptions(
-        data.movies.map((movie: Movie) => ({
-          id: movie.id,
-          label: movie.title,
-        })),
-      );
-    }
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setOptions([]);
-  };
-
-  return (
-    <Autocomplete
-      sx={{ width: 300 }}
-      open={open}
-      onOpen={handleOpen}
-      onClose={handleClose}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      getOptionLabel={(option) => option.label}
-      options={options}
-      filterOptions={() => filterOptions()}
-      loading={isLoading}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Movie"
-          onChange={debouncedSetSearch}
-          slotProps={{
-            input: {
-              ...params.InputProps,
-              endAdornment: (
-                <>
-                  {isLoading ? (
-                    <CircularProgress color="inherit" size={20} />
-                  ) : null}
-                  {params.InputProps.endAdornment}
-                </>
-              ),
-            },
-          }}
-        />
-      )}
-    />
-  );
-}
-
-function ActorsAutosearch() {
-  const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<
-    readonly { label: string; id: number }[]
-  >([]);
-  const [search, setSearch] = useState("");
-  const { data, refresh, error, isLoading } = useDataLoader<{
-    actors: Actor[];
-    totalActors: number;
-    success: boolean;
-    offset: number;
-  }>(`${baseUrl}/actors?page=1&search=${search}`, {
-    actors: [],
-    totalActors: 0,
-    success: true,
-    offset: 0,
+        if (res.status < 400) {
+          formik.resetForm();
+        }
+      } catch (err) {
+        setSnackbarMessage("Error occurred - please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+    },
   });
 
-  function filterOptions() {
-    return data.actors.map((actor: Actor) => ({
-      id: actor.id,
-      label: actor.name,
-    }));
+  function handleMovieChange(
+    event: SyntheticEvent,
+    value: { label: string; id: number } | null
+  ) {
+    console.log(value);
+    formik.setFieldValue("movie", value);
+  }
+  function handleActorChange(
+    event: SyntheticEvent,
+    value: { label: string; id: number } | null
+  ) {
+    console.log(value);
+    formik.setFieldValue("actor", value);
   }
 
-  function handleChange(val: string = "") {
-    setSearch(val);
-  }
-
-  const debouncedSetSearch = useCallback(
-    debounce((event) => handleChange(event.target.value), 500),
-    [],
-  );
-
-  useEffect(() => {
-    if (!search) {
-      setOpen(false);
-    } else {
-      setOpen(true);
-    }
-  }, [search]);
-
-  const handleOpen = () => {
-    if (search) {
-      setOpen(true);
-      setOptions(
-        data.actors.map((actor: Actor) => ({
-          id: actor.id,
-          label: actor.name,
-        })),
-      );
-    }
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setOptions([]);
-  };
-
-  return (
-    <Autocomplete
-      sx={{ width: 300 }}
-      open={open}
-      onOpen={handleOpen}
-      onClose={handleClose}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      getOptionLabel={(option) => option.label}
-      options={options}
-      filterOptions={() => filterOptions()}
-      loading={isLoading}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Actor"
-          onChange={debouncedSetSearch}
-          slotProps={{
-            input: {
-              ...params.InputProps,
-              endAdornment: (
-                <>
-                  {isLoading ? (
-                    <CircularProgress color="inherit" size={20} />
-                  ) : null}
-                  {params.InputProps.endAdornment}
-                </>
-              ),
-            },
-          }}
-        />
-      )}
-    />
-  );
-}
-
-export default function AssignCast() {
   return (
     <>
-      <div className="mb-5">
-        <MoviesAutosearch />
-      </div>
-      <div className="mb-5">
-        <ActorsAutosearch />
-      </div>
-      <div className="mb-5">
-        <Button type="button" variant="outlined">
-          Assign
-        </Button>
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={!!snackbarMessage}
+        onClose={handleClose}
+        message={snackbarMessage}
+      >
+        {snackbarMessage.includes("201:") ? (
+          <Alert
+            onClose={handleClose}
+            severity="success"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        ) : (
+          <Alert
+            onClose={handleClose}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        )}
+      </Snackbar>
+      <div>
+        <form onSubmit={formik.handleSubmit}>
+          <div>
+            <div className="mb-5 flex justify-center">
+              <MovieAutosearch formik={formik} onChange={handleMovieChange} />
+            </div>
+            <div className="mb-5 flex justify-center">
+              <ActorAutosearch formik={formik} onChange={handleActorChange} />
+            </div>
+          </div>
+          <div className="mb-5 flex justify-center">
+            <Button type="submit" variant="outlined" disabled={submitting}>
+              Assign
+            </Button>
+          </div>
+        </form>
       </div>
     </>
   );

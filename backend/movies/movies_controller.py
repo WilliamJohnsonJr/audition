@@ -8,12 +8,14 @@ from utilities.utilities import (
     _convert_json_patch_request_to_dict,
     _create_etag,
 )
+from auth.validator import require_auth
 
 MOVIES_PER_PAGE = 10
 
 
 def movies_controller(app: Flask):
     @app.route("/movies", methods=["GET"])
+    @require_auth("read:movies")
     def get_movies():
         page = request.args.get("page", 1, type=int)
         filter_by = request.args.get("search", "", type=str)
@@ -43,6 +45,7 @@ def movies_controller(app: Flask):
         )
 
     @app.route("/movies", methods=["POST"])
+    @require_auth("create:movies")
     def post_movie():
         body = request.get_json()
         if not (
@@ -85,6 +88,7 @@ def movies_controller(app: Flask):
         return jsonify({"success": True, "id": movie.id}), 201
 
     @app.route("/movies/<int:movie_id>", methods=["GET"])
+    @require_auth("read:movies")
     def get_movie(movie_id: int):
         if not isinstance(movie_id, int):
             abort(400)
@@ -104,6 +108,7 @@ def movies_controller(app: Flask):
     #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] }
     #    ]
     @app.route("/movies/<int:movie_id>", methods=["PATCH"])
+    @require_auth("modify:movies")
     def update_movie(movie_id: int):
         if not isinstance(movie_id, int):
             abort(400)
@@ -176,6 +181,7 @@ def movies_controller(app: Flask):
             return response
 
     @app.route("/movies/<int:movie_id>", methods=["DELETE"])
+    @require_auth("delete:movies")
     def delete_movie(movie_id: int):
         if not isinstance(movie_id, int):
             abort(400)

@@ -54,7 +54,7 @@ class CastTestCase(unittest.TestCase):
             db.drop_all()
 
     def test_create_cast(self):
-        new_cast = {"movie_id": 1, "actor_id": 1}
+        new_cast = {"movieId": 1, "actorId": 1}
 
         res = self.client.post("/casts", json=new_cast, content_type="application/json")
         data = json.loads(res.data)
@@ -64,7 +64,7 @@ class CastTestCase(unittest.TestCase):
         self.assertEqual(data["id"], "movie-1-actor-1")
 
     def test_create_cast_400_bad_data(self):
-        new_cast = {"movie_id": "quack", "actor_id": "moo"}
+        new_cast = {"movieId": "quack", "actorId": "moo"}
 
         res = self.client.post("/casts", json=new_cast, content_type="application/json")
         data = json.loads(res.data)
@@ -73,7 +73,7 @@ class CastTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
 
     def test_create_cast_400_cast_already_exists(self):
-        new_cast = {"movie_id": 1, "actor_id": 1}
+        new_cast = {"movieId": 1, "actorId": 1}
 
         res = self.client.post("/casts", json=new_cast, content_type="application/json")
         data = json.loads(res.data)
@@ -82,7 +82,7 @@ class CastTestCase(unittest.TestCase):
         self.assertTrue(data["success"])
         self.assertEqual(data["id"], "movie-1-actor-1")
 
-        duplicate_cast = {"movie_id": 1, "actor_id": 1}
+        duplicate_cast = {"movieId": 1, "actorId": 1}
 
         res = self.client.post(
             "/casts", json=duplicate_cast, content_type="application/json"

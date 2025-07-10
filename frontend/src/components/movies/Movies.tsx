@@ -8,8 +8,9 @@ import TextField from "@mui/material/TextField";
 import { MovieCard } from "./MovieCard";
 import { Alert, Link, Snackbar } from "@mui/material";
 import { Link as RouterLink } from "react-router";
+import Search from "@mui/icons-material/Search"
 
-export default function Movies() {
+export function Movies() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [privateSearch, setPrivateSearch] = useState("");
@@ -89,16 +90,10 @@ export default function Movies() {
           </Alert>
         )}
       </Snackbar>
-      <div className="flex-auto justify-center mb-5">
-        <Link component={RouterLink} to={`/movies/add`}>
-          <Button type="button" size="small">
-            Add Movie
-          </Button>
-        </Link>
-      </div>
-      <div className="flex-auto justify-center mb-5">
+      <div className="flex-auto justify-center my-5">
         <TextField
           id="search-movie-text-field"
+          className="w-1/2"
           label="Movie Search"
           variant="outlined"
           onChange={(event) => handleSearch(event.target.value)}
@@ -106,9 +101,13 @@ export default function Movies() {
         <Button
           className="ml-5"
           type="button"
+          startIcon={<Search />}
           onClick={() => setSearch(privateSearch)}
         >
           Search
+        </Button>
+        <Button href={`/movies/add`} variant="contained" className="ml-5">
+            Add Movie
         </Button>
       </div>
       {data.totalMovies > 0 && (

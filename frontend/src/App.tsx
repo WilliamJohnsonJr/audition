@@ -1,18 +1,19 @@
-import { useState } from "react";
-import { Link as RouterLink } from "react-router";
+import { Link as RouterLink, useNavigate} from "react-router";
 import "./App.css";
 import { Button, Link } from "@mui/material";
 import logo from "./assets/AuditionLogoMedium.png";
 
-function App() {
+export function App() {
+
   return (
     <>
-      <div className="flex-auto justify-center align-center">
+      
+      <div className="flex justify-center align-center">
         <img src={logo} alt="Audition Logo" />
       </div>
-      <div className="flex-auto">
+      <div className="flex justify-center">
         <Link component={RouterLink} to="/movies">
-          <Button type="button" className="mr-5">
+          <Button type="button">
             Movies
           </Button>
         </Link>
@@ -31,4 +32,3 @@ function App() {
   );
 }
 
-export default App;

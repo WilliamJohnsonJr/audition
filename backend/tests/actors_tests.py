@@ -286,7 +286,7 @@ class ActorTestCase(unittest.TestCase):
                     {
                         "genre": "ACTION_AND_ADVENTURE",
                         "id": 1,
-                        "posterUrl": None,
+                        "posterUrl": "https://images.unsplash.com/photo-1571842068535-9d7c7c1ddb18?q=80&w=1128&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
                         "releaseDate": "1995-06-30",
                         "title": "Apollo 13",
                     }

@@ -17,7 +17,7 @@ import {
 import { Genre } from "../../models/genre";
 import { useEffect, useState } from "react";
 
-export default function AddMovie() {
+export function AddMovie() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
