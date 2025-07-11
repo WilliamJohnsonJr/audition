@@ -1,6 +1,6 @@
 import Button from "@mui/material/Button";
 import type { Actor } from "../../models/actor";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -18,13 +18,17 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { Gender } from "../../models/gender";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function EditActor() {
+  const baseUrl = useContext(BaseUrlContext);
   const { actorId } = useParams();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const { getAccessTokenSilently } = useAuth0();
 
   const { data, error, isLoading } = useDataLoader<{
     actor?: Actor;
@@ -83,13 +87,18 @@ export function EditActor() {
       }
       try {
         setSubmitting(true);
-        const res = await fetch(`${baseUrl}/actors/${actorId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json-patch+json",
+        const accessToken = await getAccessTokenSilently();
+        const res = await fetchWithAuth(
+          accessToken,
+          `${baseUrl}/actors/${actorId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json-patch+json",
+            },
+            body: JSON.stringify(patches),
           },
-          body: JSON.stringify(patches),
-        });
+        );
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
       } catch (err) {
         setSnackbarMessage("Error occurred - please try again.");

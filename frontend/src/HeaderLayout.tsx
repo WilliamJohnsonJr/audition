@@ -9,19 +9,29 @@ export function HeaderLayout() {
 
   return (
     <>
-        <nav className="mb-5 flex justify-between">
-          <Button startIcon={<ArrowBackIcon />} type="button" color="secondary"
-          className="float-left bg-gradient-to-r focus:from-pink-500 focus:to-orange-500 focus:text-white hover:from-pink-500 hover:to-orange-500 hover:text-white"  onClick={() => navigate(-1)}>
-            Back
-          </Button>
-          <Link component={RouterLink} aria-label="Home" to="/" className="rounded-xl bg-gradient-to-r focus:from-indigo-800 focus:to-cyan-800 focus:text-white hover:from-indigo-800 hover:to-cyan-800">
-            
-              <img src={logo} alt="AuditionLogo" className="h-24" />
-            
-          </Link>
-          <LogoutButton />
-        </nav>
-      <Outlet />
+      <nav className="mb-5 flex justify-between">
+        <Button
+          startIcon={<ArrowBackIcon />}
+          type="button"
+          color="secondary"
+          className="float-left bg-gradient-to-r focus:from-pink-500 focus:to-orange-500 focus:text-white hover:from-pink-500 hover:to-orange-500 hover:text-white"
+          onClick={() => navigate(-1)}
+        >
+          Back
+        </Button>
+        <Link
+          component={RouterLink}
+          aria-label="Home"
+          to="/"
+          className="rounded-xl bg-gradient-to-r focus:from-indigo-800 focus:to-cyan-800 focus:text-white hover:from-indigo-800 hover:to-cyan-800"
+        >
+          <img src={logo} alt="AuditionLogo" className="h-24" />
+        </Link>
+        <LogoutButton />
+      </nav>
+      <main>
+        <Outlet />
+      </main>
     </>
   );
 }

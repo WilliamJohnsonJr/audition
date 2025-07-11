@@ -57,7 +57,11 @@ export function MovieCard({
       <CardActions className="flex-auto justify-center">
         {!movieId && (
           <Link component={RouterLink} to={`/movies/${movie.id}`}>
-            <Button type="button" size="small" aria-label={`View movie ${movie.title}`}>
+            <Button
+              type="button"
+              size="small"
+              aria-label={`View movie ${movie.title}`}
+            >
               View
             </Button>
           </Link>
@@ -73,7 +77,11 @@ export function MovieCard({
           </Button>
         )}
         <Link component={RouterLink} to={`/movies/${movie.id}/edit`}>
-          <Button type="button" size="small" aria-label={`Edit movie ${movie.title}`}>
+          <Button
+            type="button"
+            size="small"
+            aria-label={`Edit movie ${movie.title}`}
+          >
             Edit
           </Button>
         </Link>

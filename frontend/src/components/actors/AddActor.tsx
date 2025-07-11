@@ -1,5 +1,5 @@
 import Button from "@mui/material/Button";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { useNavigate } from "react-router";
@@ -15,18 +15,19 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { Gender } from "../../models/gender";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function AddActor() {
+  const baseUrl = useContext(BaseUrlContext);
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-
+  const { getAccessTokenSilently } = useAuth0();
   const validationSchema = yup.object({
     name: yup.string().min(1).required("Name is required"),
-    gender: yup
-      .string()
-      .oneOf(Object.values(Gender)),
+    gender: yup.string().oneOf(Object.values(Gender)),
     photoUrl: yup.string().url(),
     age: yup.number().min(1).required("Age is required"),
   });
@@ -54,7 +55,8 @@ export function AddActor() {
 
       try {
         setSubmitting(true);
-        const res = await fetch(`${baseUrl}/actors`, {
+        const accessToken = await getAccessTokenSilently();
+        const res = await fetchWithAuth(accessToken, `${baseUrl}/actors`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

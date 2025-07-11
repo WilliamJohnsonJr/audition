@@ -8,14 +8,16 @@ from sqlalchemy import text, create_engine
 from app import create_app
 from models import Cast, db, Actor
 from utilities.hydrate_db import make_movies, make_actors
-
+from dotenv import load_dotenv
 import json
+
+load_dotenv()
 
 
 class ActorTestCase(unittest.TestCase):
     def setUp(self):
         self.database_name = "casting_test"
-        database_path = os.environ["DATABASE_URL"]
+        database_path = os.environ["TEST_DATABASE_URL"]
         if database_path.startswith("postgres://"):
             database_path = database_path.replace("postgres://", "postgresql://", 1)
         self.engine = create_engine(database_path)

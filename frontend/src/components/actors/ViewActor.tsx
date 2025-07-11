@@ -1,20 +1,29 @@
 import Button from "@mui/material/Button";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
-import Skeleton from "@mui/material/Skeleton";
 import { useParams, useNavigate } from "react-router";
 import { ActorCard } from "../actors/ActorCard";
 import type { Actor } from "../../models/actor";
 import type { Movie } from "../../models/movie";
 import { MovieCard } from "../movies/MovieCard";
-import { useEffect, useState } from "react";
-import { Alert, Snackbar, Typography } from "@mui/material";
+import { useContext, useEffect, useState } from "react";
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Typography,
+} from "@mui/material";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function ViewActor() {
+  const baseUrl = useContext(BaseUrlContext);
   const { actorId } = useParams();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const { getAccessTokenSilently } = useAuth0();
 
   const { data, refresh, error, isLoading } = useDataLoader<{
     actor?: Actor;
@@ -27,7 +36,10 @@ export function ViewActor() {
   async function deleteActor(id: number) {
     setSubmitting(true);
     try {
-      const res = await fetch(`${baseUrl}/actors/${id}`, { method: "DELETE" });
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(accessToken, `${baseUrl}/actors/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok && res.status < 400) {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
         navigate("/actors");
@@ -44,9 +56,11 @@ export function ViewActor() {
   async function unassignCasting(movieId: number) {
     setSubmitting(true);
     try {
-      const res = await fetch(
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(
+        accessToken,
         `${baseUrl}/casts/movies/${movieId}/actors/${actorId}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
       setSnackbarMessage(`${res.status}: ${res.statusText}`);
       if (res.status < 400) {
@@ -101,17 +115,16 @@ export function ViewActor() {
           </Alert>
         )}
       </Snackbar>
-      <div className="flex-auto justify-center mb-5">
-        <Button type="button" onClick={() => navigate(-1)}>
-          Back
-        </Button>
-      </div>
       {isLoading ? (
         <>
-          <Skeleton variant="rounded" width={350} height={700} />
+          <Box
+            sx={{ display: "flex", justifyContent: "center", height: "90vh" }}
+          >
+            <CircularProgress />
+          </Box>
         </>
       ) : data.actor ? (
-          <>
+        <>
           <Typography
             variant="h1"
             color="primary.main"

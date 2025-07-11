@@ -8,6 +8,9 @@ from sqlalchemy import Enum, Integer, String, Date
 from sqlalchemy.orm import mapped_column, Mapped
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Base(DeclarativeBase):

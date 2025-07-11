@@ -1,20 +1,23 @@
 import Button from "@mui/material/Button";
 import type { Actor } from "../../models/actor";
-import { useEffect, useState } from "react";
-import { baseUrl } from "../../shared/base-url";
+import { useContext, useEffect, useState } from "react";
 import { useDataLoader } from "../../shared/data-loader";
 import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
 import { ActorCard } from "./ActorCard";
-import { Alert, Link, Snackbar } from "@mui/material";
-import { Link as RouterLink } from "react-router";
+import { Alert, Snackbar } from "@mui/material";
+import { BaseUrlContext } from "../../shared/base-url";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function Actors() {
+  const baseUrl = useContext(BaseUrlContext);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [privateSearch, setPrivateSearch] = useState("");
   const [pageMax, setPageMax] = useState(1);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const { getAccessTokenSilently } = useAuth0();
 
   const { data, refresh, error, isLoading } = useDataLoader<{
     actors: Actor[];
@@ -48,7 +51,10 @@ export function Actors() {
 
   async function deleteActor(id: number) {
     try {
-      const res = await fetch(`${baseUrl}/actors/${id}`, { method: "DELETE" });
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(accessToken, `${baseUrl}/actors/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok && res.status < 400) {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
         refresh();
@@ -105,7 +111,7 @@ export function Actors() {
           Search
         </Button>
         <Button href={`/actors/add`} variant="contained" className="ml-5">
-            Add Actor
+          Add Actor
         </Button>
       </div>
       {data.totalActors > 0 && (
@@ -132,15 +138,20 @@ export function Actors() {
         </Button>
       </div>
       {isLoading ? (
-        <>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-        </>
+        <ul className="list-none">
+          <li className="inline-flex mb-10 mx-2" key="skel-1">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-2">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-3">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-4">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+        </ul>
       ) : data && !!data.actors.length ? (
         <ul className="list-none">
           {data.actors.map((actor: Actor) => (

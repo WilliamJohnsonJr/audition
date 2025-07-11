@@ -1,5 +1,4 @@
 alembic==1.16.1
-Authlib==1.6.0
 black==25.1.0
 blinker==1.9.0
 cffi==1.17.1

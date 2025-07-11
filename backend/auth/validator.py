@@ -1,37 +1,126 @@
 import json
 import os
+from flask import abort, request
+from functools import wraps
+from jose import jwt
 from urllib.request import urlopen
-
-from authlib.oauth2.rfc7523 import JWTBearerTokenValidator
-from authlib.jose.rfc7517.jwk import JsonWebKey
 from dotenv import load_dotenv
 
 load_dotenv()
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
+ALGORITHMS = [os.getenv("ALGORITHMS", "")]
+API_AUDIENCE = os.getenv("API_AUDIENCE")
 
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
-API_AUDIENCE = os.getenv('API_AUDIENCE')
 
-class Auth0JWTBearerTokenValidator(JWTBearerTokenValidator):
-  def __init__(self, domain, audience):
-    issuer = f"https://{domain}/"
-    jsonurl = urlopen(f"{issuer}.well-known/jwks.json")
-    public_key = JsonWebKey.import_key_set(
-        json.loads(jsonurl.read())
+class AuthError(Exception):
+    def __init__(self, error, status_code):
+        self.error = error
+        self.status_code = status_code
+
+
+def get_token_auth_header():
+    # Partially taken from lesson 2.15 Practice - Applying Skills in Flask from the IAM course
+    if "Authorization" not in request.headers:
+        # We do not include descriptive error information for security's sake
+        raise AuthError({"code": "unauthorized", "description": "Unauthorized"}, 401)
+    auth_header = request.headers["Authorization"]
+    pieces = auth_header.split(" ")
+    if len(pieces) != 2:
+        # We do not include descriptive error information for security's sake
+        raise AuthError({"code": "unauthorized", "description": "Unauthorized"}, 401)
+    elif pieces[0].lower() != "bearer":
+        # We do not include descriptive error information for security's sake
+        raise AuthError({"code": "unauthorized", "description": "Unauthorized"}, 401)
+    return pieces[1]
+
+
+def check_permissions(permission, payload):
+    if "permissions" not in payload:
+        # We do not include descriptive error information for security's sake
+        raise AuthError({"code": "forbidden", "description": "Forbidden"}, 403)
+    if permission not in payload["permissions"]:
+        # We do not include descriptive error information for security's sake
+        raise AuthError({"code": "forbidden", "description": "Forbidden"}, 403)
+    return True
+
+
+def verify_decode_jwt(token):
+    # Taken from the 2.10 Practice - Validating Auth0 Tokens exercise in the IAM course
+    jsonurl = urlopen(f"https://{AUTH0_DOMAIN}/.well-known/jwks.json")
+    jwks = json.loads(jsonurl.read())
+
+    unverified_header = jwt.get_unverified_header(token)
+
+    rsa_key = {}
+    if "kid" not in unverified_header:
+        raise AuthError(
+            {"code": "invalid_header", "description": "Authorization malformed."}, 401
+        )
+
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"],
+            }
+
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=API_AUDIENCE,
+                issuer=f"https://{AUTH0_DOMAIN}/",
+            )
+
+            return payload
+
+        except jwt.ExpiredSignatureError:  # type: ignore
+            raise AuthError(
+                {"code": "token_expired", "description": "Token expired."}, 401
+            )
+
+        except jwt.JWTClaimsError:  # type: ignore
+            raise AuthError(
+                {
+                    "code": "invalid_claims",
+                    "description": "Incorrect claims. Please, check the audience and issuer.",
+                },
+                403,
+            )
+        except Exception:
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authentication token.",
+                },
+                403,
+            )
+    raise AuthError(
+        {
+            "code": "invalid_header",
+            "description": "Unable to find the appropriate key.",
+        },
+        403,
     )
-    super(Auth0JWTBearerTokenValidator, self).__init__(
-        public_key
-    )
-    self.claims_options = {
-        "exp": {"essential": True},
-        "aud": {"essential": True, "value": audience},
-        "iss": {"essential": True, "value": issuer},
-    }
 
-from authlib.integrations.flask_oauth2 import ResourceProtector
 
-require_auth = ResourceProtector()
-validator = Auth0JWTBearerTokenValidator(
-    AUTH0_DOMAIN,
-    API_AUDIENCE
-)
-require_auth.register_token_validator(validator)
+def requires_auth(permission=""):
+    def requires_auth_decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                token = get_token_auth_header()
+                payload = verify_decode_jwt(token)
+                check_permissions(permission, payload)
+                return f(*args, **kwargs)
+            except AuthError as e:
+                abort(e.status_code, e)
+
+        return wrapper
+
+    return requires_auth_decorator

@@ -5,9 +5,15 @@ import {
   CircularProgress,
 } from "@mui/material";
 import type { FormikValues } from "formik";
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type SyntheticEvent,
+} from "react";
 import type { Movie } from "../../models/movie";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
 
 export function MovieAutosearch({
@@ -17,15 +23,16 @@ export function MovieAutosearch({
   formik: FormikValues;
   onChange: (
     event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    value: { label: string; id: number } | null,
   ) => void;
 }) {
+  const baseUrl = useContext(BaseUrlContext);
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<
     readonly { label: string; id: number }[]
   >([{ label: "Not Selected", id: 0 }]);
   const [search, setSearch] = useState("");
-  const { data, refresh, error, isLoading } = useDataLoader<{
+  const { data, isLoading } = useDataLoader<{
     movies: Movie[];
     totalMovies: number;
     success: boolean;
@@ -50,7 +57,7 @@ export function MovieAutosearch({
 
   const debouncedSetSearch = useCallback(
     debounce((event) => handleChange(event.target.value), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -67,8 +74,8 @@ export function MovieAutosearch({
       setOptions(
         data.movies.map((movie: Movie) => ({
           id: movie.id,
-          label: `${movie.title} | id: ${movie.id}`
-        }))
+          label: `${movie.title} | id: ${movie.id}`,
+        })),
       );
     }
   };

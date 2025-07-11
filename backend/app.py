@@ -6,8 +6,11 @@ from models import setup_db
 from flask_cors import CORS
 from movies.movies_controller import movies_controller
 from utilities.hydrate_db import hydrate_db
+from dotenv import load_dotenv
 
-origins = os.environ.get("ORIGINS", ["http://localhost:5173"])
+load_dotenv()
+
+origins = os.environ.get("ORIGINS", "")
 seed_db = os.environ.get("HYDRATE_DB", False)
 
 
@@ -21,7 +24,7 @@ def create_app(test_config=None):
     else:
         database_path = test_config.get("SQLALCHEMY_DATABASE_URI")
         setup_db(app, database_path=database_path)
-    CORS(app, origins=origins)
+    CORS(app, origins=origins.split(","))
 
     @app.after_request
     def after_request(response):

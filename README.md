@@ -3,17 +3,17 @@ Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
 ![Audition Logo](./AuditionLogoScreenshot.png)
 
-![Audition Screenshot](./AuditionScreenshotNoHeader.png)
+![Audition Actors Screenshot](./ScreenshotActors.png)
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
-Frontend: React + Vite + TypeScript
+Frontend: React + Vite + TypeScript + Material UI + Formik
 
 Backend: Python with Flask + SQLAlchemy + Alembic
 
 Database: PostgreSQL 16
 
-Auth: Auth0
+Auth: Auth0 with Role-Based Access Control (RBAC)
 
 Hosting: AWS RDS (PostgresQL DB), ECS Fargate (Flask API app), and S3 Static-Site Hosting (React Frontend).
 
@@ -45,7 +45,7 @@ In Summary: this template generates a small VPC with what I consider to be basic
     - DBUsername
     - DBPassword
     - DATABASE_URL
-    - EXCITED
+    - 
 - Everything else is included in the CloudFormation template, provided that you pass in the correct environment variables and parameters when running `aws cloudformation create-stack` (I recommend doing that through Parameter Store, but this is an example app so I feed some things in through the cloudformation terminal command as Parameters below).
 ### Steps
 (WIP)
@@ -53,7 +53,7 @@ In Summary: this template generates a small VPC with what I consider to be basic
 ```bash
 aws cloudformation create-stack --stack-name capstone-stack --template-url https://{YOUR_BUCKET_NAME}.s3.amazonaws.com/CapstoneTemplate-template.yaml --parameters ParameterKey=MyUsername,ParameterValue=admin ParameterKey=MyIPAddressCIDR,ParameterValue=0.0.0.0/32 ParameterKey=DBUsername,ParameterValue=postgres ParameterKey=DBPassword,ParameterValue="SUPERsecretPASSWORD" --capabilities CAPABILITY_NAMED_IAM --profile default
 ```
-- Once the initial stack is deployed, CodeBuild will handle the rest when you push updates to your GitHub repo.
+- Automated builds with CodeBuild are out-of-scope for this project.
 
 ## Considerations for the CloudFormation template
 - The VPC is deliberately kept small for this project (/24 CIDR, less than 256 available IPs). You should probably use a larger VPC in production.
@@ -73,5 +73,8 @@ aws cloudformation create-stack --stack-name capstone-stack --template-url https
     - There is an ALB in front of the ECS Fargate tasks that run the API, and it has Elastic Network Interfaces in each of the two public subnets of the VPC.
     - RDS has a cost since it is a managed service, and since I wanted to set this up with RDS (best practice) instead of just putting PostgresQL on an EC2 Instance.
 
-## CloudBuild
-TODO
+## Screenshots
+![Audition Home Screenshot](./ScreenshotHome.png)
+![Audition Movies Screenshot](./ScreenshotMovies.png)
+![Audition Actor Screenshot](./ScreenshotActor.png)
+![Audition Assign Cast Screenshot](./ScreenshotAssignCast.png)

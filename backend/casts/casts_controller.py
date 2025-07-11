@@ -1,11 +1,11 @@
 from flask import Flask, abort, jsonify, request
 from models import Cast
-from auth.validator import require_auth
+from auth.validator import requires_auth
 
 
 def casts_controller(app: Flask):
     @app.route("/casts", methods=["POST"])
-    @require_auth("create:casts")
+    @requires_auth("create:casts")
     def post_cast():
         body = request.get_json()
 
@@ -36,7 +36,7 @@ def casts_controller(app: Flask):
             abort(400)
 
     @app.route("/casts/movies/<int:movie_id>/actors/<int:actor_id>", methods=["DELETE"])
-    @require_auth("delete:casts")
+    @requires_auth("delete:casts")
     def delete_cast(movie_id: int, actor_id: int):
         cast = Cast.query.filter(
             (Cast.movie_id == movie_id) & (Cast.actor_id == actor_id)

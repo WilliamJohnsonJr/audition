@@ -1,21 +1,28 @@
-import Button from "@mui/material/Button";
 import type { Movie } from "../../models/movie";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
-import Skeleton from "@mui/material/Skeleton";
 import { useParams, useNavigate } from "react-router";
 import { ActorCard } from "../actors/ActorCard";
 import type { Actor } from "../../models/actor";
 import { MovieCard } from "./MovieCard";
-import { useEffect, useState } from "react";
-import { Alert, Snackbar, Typography } from "@mui/material";
-import { theme } from '../../theme';
+import { useContext, useEffect, useState } from "react";
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Typography,
+} from "@mui/material";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function ViewMovie() {
+  const baseUrl = useContext(BaseUrlContext);
   const { movieId } = useParams();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const { getAccessTokenSilently } = useAuth0();
 
   const { data, refresh, error, isLoading } = useDataLoader<{
     movie?: Movie;
@@ -27,7 +34,10 @@ export function ViewMovie() {
 
   async function deleteMovie(id: number) {
     try {
-      const res = await fetch(`${baseUrl}/movies/${id}`, { method: "DELETE" });
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(accessToken, `${baseUrl}/movies/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok && res.status < 400) {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
         navigate("/movies");
@@ -44,10 +54,15 @@ export function ViewMovie() {
   async function unassignCasting(actorId: number) {
     setSubmitting(true);
     try {
-      const res = await fetch(`${baseUrl}/casts/movies/${movieId}/actors/${actorId}`, { method: "DELETE" });
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(
+        accessToken,
+        `${baseUrl}/casts/movies/${movieId}/actors/${actorId}`,
+        { method: "DELETE" },
+      );
       setSnackbarMessage(`${res.status}: ${res.statusText}`);
       if (res.status < 400) {
-        refresh()
+        refresh();
       }
     } catch {
       setSnackbarMessage("Error occurred - please try again.");
@@ -100,10 +115,14 @@ export function ViewMovie() {
       </Snackbar>
       {isLoading ? (
         <>
-          <Skeleton variant="rounded" width={350} height={700} />
+          <Box
+            sx={{ display: "flex", justifyContent: "center", height: "90vh" }}
+          >
+            <CircularProgress />
+          </Box>
         </>
       ) : data.movie ? (
-          <>
+        <>
           <Typography
             variant="h1"
             color="primary.main"
@@ -115,14 +134,22 @@ export function ViewMovie() {
             <MovieCard movie={data.movie} deleteMovie={deleteMovie} />
           </div>
           <div>
-            <Typography variant="h2" color="secondary.main" className="my-5 border-2 rounded-xl">
+            <Typography
+              variant="h2"
+              color="secondary.main"
+              className="my-5 border-2 rounded-xl"
+            >
               Cast
             </Typography>
             <ul className="list-none">
               {data.movie?.actors.length
                 ? data.movie?.actors.map((actor: Omit<Actor, "movies">) => (
                     <li className="inline-flex mb-10 mx-2" key={actor.id}>
-                      <ActorCard actor={actor} unassignCasting={unassignCasting} submitting={submitting} />
+                      <ActorCard
+                        actor={actor}
+                        unassignCasting={unassignCasting}
+                        submitting={submitting}
+                      />
                     </li>
                   ))
                 : "No Cast Assigned"}

@@ -1,5 +1,5 @@
 import Button from "@mui/material/Button";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { useNavigate } from "react-router";
@@ -15,13 +15,17 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { Genre } from "../../models/genre";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { fetchWithAuth } from "../../api-helper/api-helper";
 
 export function AddMovie() {
+  const baseUrl = useContext(BaseUrlContext);
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [genre, setGenre] = useState<Genre>(Genre.ACTION_AND_ADVENTURE);
+  const { getAccessTokenSilently } = useAuth0();
   useEffect(() => {
     formik.setFieldValue("genre", genre);
   }, [genre]);
@@ -62,7 +66,8 @@ export function AddMovie() {
 
       try {
         setSubmitting(true);
-        const res = await fetch(`${baseUrl}/movies`, {
+        const accessToken = await getAccessTokenSilently();
+        const res = await fetchWithAuth(accessToken, `${baseUrl}/movies`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

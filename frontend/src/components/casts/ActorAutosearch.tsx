@@ -5,9 +5,15 @@ import {
   CircularProgress,
 } from "@mui/material";
 import type { FormikValues } from "formik";
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type SyntheticEvent,
+} from "react";
 import type { Actor } from "../../models/actor";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
 
 export function ActorAutosearch({
@@ -17,15 +23,16 @@ export function ActorAutosearch({
   formik: FormikValues;
   onChange: (
     event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    value: { label: string; id: number } | null,
   ) => void;
 }) {
+  const baseUrl = useContext(BaseUrlContext);
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<
     readonly { label: string; id: number }[]
   >([]);
   const [search, setSearch] = useState("");
-  const { data, refresh, error, isLoading } = useDataLoader<{
+  const { data, isLoading } = useDataLoader<{
     actors: Actor[];
     totalActors: number;
     success: boolean;
@@ -50,7 +57,7 @@ export function ActorAutosearch({
 
   const debouncedSetSearch = useCallback(
     debounce((event) => handleChange(event.target.value), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -68,7 +75,7 @@ export function ActorAutosearch({
         data.actors.map((actor: Actor) => ({
           id: actor.id,
           label: `${actor.name}  | id: ${actor.id}`,
-        }))
+        })),
       );
     }
   };

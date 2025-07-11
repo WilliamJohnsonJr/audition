@@ -16,8 +16,20 @@ Marshmallow Schemas would be a better choice for a larger project, but I made my
 ## Setup for local development
 - `python3 -m .venv venv`
 - `source .venv/bin/activate`
+- Create a .env file in `/backend` and provide the values shown below in the .env example.
 - `pip install -r requirements.txt`
-- `HYDRATE_DB=false DATABASE_URL=postgresql://postgres@localhost:5432/casting python app.py`
+- `python app.py`
+
+.env Example:
+```shell
+AUTH0_DOMAIN=YOUR_AUTH0_DOMAIN
+ALGORITHMS=YOUR_AUTH0_ALGORITHMS
+API_AUDIENCE=YOUR_AUTH0_AUDIENCE
+HYDRATE_DB=false # Or true if you want to set up some initial seed data
+DATABASE_URL=postgresql://postgres@localhost:5432/casting
+TEST_DATABASE_URL=postgresql://postgres@localhost:5432/casting_test
+ORIGINS=http://localhost:5173 # Or whatever your localhost is.
+```
 
 ## To run production locally in a container
 - `docker build -t capstone . --platform linux/amd64`
@@ -25,7 +37,7 @@ Marshmallow Schemas would be a better choice for a larger project, but I made my
 
 ## Tests
 - `createdb casting_test`
-- `DATABASE_URL=postgresql://postgres@localhost:5432/casting_test python -m tests.test_app`
+- `TEST_DATABASE_URL=postgresql://postgres@localhost:5432/casting_test python -m tests.test_app`
 
 To run an individual test case, use the following command:
 `python -m tests.casts_tests`

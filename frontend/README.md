@@ -13,6 +13,21 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
+## Set up
+
+- `npm i`
+- `npm run dev`
+
+You will need to create a .env file in `/frontend` with the following values:
+
+```shell
+VITE_AUTH0_DOMAIN=YOUR_AUTH0_DOMAIN
+VITE_AUTH0_AUDIENCE=YOUR_AUTH0_AUDIENCE
+VITE_BASE_URL=http://127.0.0.1:5000 # Or whatever your base domain URL is for the API
+VITE_AUTH0_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
+VITE_AUTH0_CALLBACK_URL=http://localhost:5173 # Or whatever your callback URL is
+```
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

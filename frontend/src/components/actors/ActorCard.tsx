@@ -10,7 +10,7 @@ import {
 import { Link as RouterLink, useParams } from "react-router";
 import silouette from "../../assets/silouette-optimized.webp";
 import type { ActorOnly } from "../../models/actor";
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary } from "react-error-boundary";
 
 export function ActorCard({
   actor,
@@ -21,7 +21,7 @@ export function ActorCard({
   actor: ActorOnly;
   deleteActor?: (id: number) => void;
   unassignCasting?: (actorId: number) => void;
-  submitting?: boolean
+  submitting?: boolean;
 }) {
   const { actorId } = useParams();
   return (
@@ -57,7 +57,11 @@ export function ActorCard({
       <CardActions className="flex-auto justify-center">
         {!actorId && (
           <Link component={RouterLink} to={`/actors/${actor.id}`}>
-            <Button type="button" size="small" aria-label={`View actor ${actor.name}`}>
+            <Button
+              type="button"
+              size="small"
+              aria-label={`View actor ${actor.name}`}
+            >
               View
             </Button>
           </Link>
@@ -73,7 +77,11 @@ export function ActorCard({
           </Button>
         )}
         <Link component={RouterLink} to={`/actors/${actor.id}/edit`}>
-          <Button type="button" size="small" aria-label={`Edit actor ${actor.name}`}>
+          <Button
+            type="button"
+            size="small"
+            aria-label={`Edit actor ${actor.name}`}
+          >
             Edit
           </Button>
         </Link>

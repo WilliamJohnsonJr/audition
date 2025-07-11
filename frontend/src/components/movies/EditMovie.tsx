@@ -1,6 +1,6 @@
 import Button from "@mui/material/Button";
 import type { Movie } from "../../models/movie";
-import { baseUrl } from "../../shared/base-url";
+import { BaseUrlContext } from "../../shared/base-url";
 import { useDataLoader } from "../../shared/data-loader";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -18,14 +18,18 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { Genre } from "../../models/genre";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function EditMovie() {
+  const baseUrl = useContext(BaseUrlContext);
   const { movieId } = useParams();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [genre, setGenre] = useState<Genre>(Genre.ACTION_AND_ADVENTURE);
+  const { getAccessTokenSilently } = useAuth0();
   useEffect(() => {
     formik.setFieldValue("genre", genre);
   }, [genre]);
@@ -118,13 +122,18 @@ export function EditMovie() {
       }
       try {
         setSubmitting(true);
-        const res = await fetch(`${baseUrl}/movies/${movieId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json-patch+json",
+        const accessToken = await getAccessTokenSilently();
+        const res = await fetchWithAuth(
+          accessToken,
+          `${baseUrl}/movies/${movieId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json-patch+json",
+            },
+            body: JSON.stringify(patches),
           },
-          body: JSON.stringify(patches),
-        });
+        );
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
       } catch (err) {
         setSnackbarMessage("Error occurred - please try again.");

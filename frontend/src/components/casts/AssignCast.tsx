@@ -1,16 +1,18 @@
-import { useState, type SyntheticEvent } from "react";
+import { useContext, useState, type SyntheticEvent } from "react";
 import { Alert, Button, Snackbar } from "@mui/material";
 import { ActorAutosearch } from "./ActorAutosearch";
 import { MovieAutosearch } from "./MovieAutosearch";
 import { useFormik } from "formik";
 import * as yup from "yup";
-import { baseUrl } from "../../shared/base-url";
-import { useNavigate } from "react-router";
+import { BaseUrlContext } from "../../shared/base-url";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function AssignCast() {
+  const baseUrl = useContext(BaseUrlContext);
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const navigate = useNavigate();
+  const { getAccessTokenSilently } = useAuth0();
   function handleClose() {
     setSnackbarMessage("");
   }
@@ -42,7 +44,8 @@ export function AssignCast() {
       };
       try {
         setSubmitting(true);
-        const res = await fetch(`${baseUrl}/casts`, {
+        const accessToken = await getAccessTokenSilently();
+        const res = await fetchWithAuth(accessToken, `${baseUrl}/casts`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -63,15 +66,15 @@ export function AssignCast() {
   });
 
   function handleMovieChange(
-    event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    _event: SyntheticEvent,
+    value: { label: string; id: number } | null,
   ) {
     console.log(value);
     formik.setFieldValue("movie", value);
   }
   function handleActorChange(
-    event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    _event: SyntheticEvent,
+    value: { label: string; id: number } | null,
   ) {
     console.log(value);
     formik.setFieldValue("actor", value);

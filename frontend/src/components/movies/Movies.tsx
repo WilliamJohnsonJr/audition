@@ -1,20 +1,23 @@
 import Button from "@mui/material/Button";
 import type { Movie } from "../../models/movie";
-import { useEffect, useState } from "react";
-import { baseUrl } from "../../shared/base-url";
+import { useContext, useEffect, useState } from "react";
 import { useDataLoader } from "../../shared/data-loader";
 import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
 import { MovieCard } from "./MovieCard";
-import { Alert, Link, Snackbar } from "@mui/material";
-import { Link as RouterLink } from "react-router";
-import Search from "@mui/icons-material/Search"
+import { Alert, Snackbar } from "@mui/material";
+import Search from "@mui/icons-material/Search";
+import { BaseUrlContext } from "../../shared/base-url";
+import { fetchWithAuth } from "../../api-helper/api-helper";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function Movies() {
+  const baseUrl = useContext(BaseUrlContext);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [privateSearch, setPrivateSearch] = useState("");
   const [pageMax, setPageMax] = useState(1);
+  const { getAccessTokenSilently } = useAuth0();
 
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const { data, refresh, error, isLoading } = useDataLoader<{
@@ -31,7 +34,10 @@ export function Movies() {
 
   async function deleteMovie(id: number) {
     try {
-      const res = await fetch(`${baseUrl}/movies/${id}`, { method: "DELETE" });
+      const accessToken = await getAccessTokenSilently();
+      const res = await fetchWithAuth(accessToken, `${baseUrl}/movies/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok && res.status < 400) {
         setSnackbarMessage(`${res.status}: ${res.statusText}`);
         refresh();
@@ -107,7 +113,7 @@ export function Movies() {
           Search
         </Button>
         <Button href={`/movies/add`} variant="contained" className="ml-5">
-            Add Movie
+          Add Movie
         </Button>
       </div>
       {data.totalMovies > 0 && (
@@ -134,15 +140,20 @@ export function Movies() {
         </Button>
       </div>
       {isLoading ? (
-        <>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-          <br></br>
-          <Skeleton variant="rounded" width={350} height={300} />
-        </>
+        <ul className="list-none">
+          <li className="inline-flex mb-10 mx-2" key="skel-1">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-2">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-3">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+          <li className="inline-flex mb-10 mx-2" key="skel-4">
+            <Skeleton variant="rounded" width={350} height={300} />
+          </li>
+        </ul>
       ) : data && !!data.movies.length ? (
         <ul className="list-none">
           {data.movies.map((movie: Movie) => (
