@@ -1,7 +1,21 @@
+from functools import wraps
 import os
 import unittest
 import json
+from unittest.mock import patch
 from sqlalchemy import text, create_engine
+
+def mock_decorator_function(*args, **kwargs):
+    """A mock decorator that simply returns the decorated function."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*inner_args, **inner_kwargs):
+            return f(*inner_args, **inner_kwargs)
+        return decorated_function
+    return decorator
+
+patch('auth.validator.requires_auth', mock_decorator_function).start()
+
 from app import create_app
 from models import Cast, db, Movie
 from utilities.hydrate_db import make_movies, make_actors
@@ -9,7 +23,6 @@ from dotenv import load_dotenv
 import json
 
 load_dotenv()
-
 
 class MovieTestCase(unittest.TestCase):
     def setUp(self):
