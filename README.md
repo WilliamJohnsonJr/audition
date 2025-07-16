@@ -1,9 +1,9 @@
 # Audition: A Movie Casting App for Casting Agencies
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
-![Audition Logo](./AuditionLogoScreenshot.png)
+![Audition Logo](./images/AuditionLogoScreenshot.png)
 
-![Audition Actors Screenshot](./ScreenshotActors.png)
+![Audition Actors Screenshot](./images/ScreenshotActors.png)
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
@@ -18,6 +18,15 @@ Auth: Auth0 with Role-Based Access Control (RBAC)
 Hosting: AWS RDS (PostgresQL DB), ECS Fargate (Flask API app), and S3 Static-Site Hosting (React Frontend).
 
 See the READMEs in the `frontend` and `backend` directory for specific information on running the Frontend and Backend.
+
+## A note on unit tests
+Testing this exhaustively would double the delivery time of this project for the Udacity course, but I have mostly tested the backend API with unittest.
+- See the `backend/tests/movies_tests.py` test file for an example of patching modules with the patch decorator, and validating that permissions checks are applied to the appropriate endpoint
+- The `actors_tests.py` and `casting_tests.py` files simply bypass the permissions checks, but in production I would test these just like the movies tests.
+- Unit testing the Frontend is out-of-scope for the Udacity project, but normally I would do that with Vitest and (for critical flows) Cypress.
+
+## Postman Tests
+There is a Postman Collection included in the `/backend` directory that tests all RBAC roles and actions on the API. You will need to set up your authorization tokens for each RBAC role to use the collection. See the backend README for details.
 
 ## AWS Architecture Overview
 - API Entrypoint at an Application Load Balancer via a custom domain with an A Record alias pointing at the ALB in Route53.
@@ -74,7 +83,7 @@ aws cloudformation create-stack --stack-name capstone-stack --template-url https
     - RDS has a cost since it is a managed service, and since I wanted to set this up with RDS (best practice) instead of just putting PostgresQL on an EC2 Instance.
 
 ## Screenshots
-![Audition Home Screenshot](./ScreenshotHome.png)
-![Audition Movies Screenshot](./ScreenshotMovies.png)
-![Audition Actor Screenshot](./ScreenshotActor.png)
-![Audition Assign Cast Screenshot](./ScreenshotAssignCast.png)
+![Audition Home Screenshot](./images/ScreenshotHome.png)
+![Audition Movies Screenshot](./images/ScreenshotMovies.png)
+![Audition Actor Screenshot](./images/ScreenshotActor.png)
+![Audition Assign Cast Screenshot](./images/ScreenshotAssignCast.png)

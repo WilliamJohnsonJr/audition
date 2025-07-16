@@ -1,21 +1,8 @@
-from functools import wraps
 import os
 import unittest
 import json
 from unittest.mock import patch
 from sqlalchemy import text, create_engine
-
-def mock_decorator_function(*args, **kwargs):
-    """A mock decorator that simply returns the decorated function."""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*inner_args, **inner_kwargs):
-            return f(*inner_args, **inner_kwargs)
-        return decorated_function
-    return decorator
-
-patch('auth.validator.requires_auth', mock_decorator_function).start()
-
 from app import create_app
 from models import Cast, db, Movie
 from utilities.hydrate_db import make_movies, make_actors
@@ -65,7 +52,18 @@ class MovieTestCase(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    def test_get_movies(self):
+    def test_get_movies_unauthorized(self):
+        res = self.client.get("/movies")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(data["error"], "Unauthorized")
+
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movies_casting_assistant(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         res = self.client.get("/movies")
         data = json.loads(res.data)
         movies = data["movies"]
@@ -95,7 +93,12 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(data["totalMovies"], 11)
         self.assertEqual(data["offset"], 0)
 
-    def test_get_movies_pagination(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movies_pagination(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
+
         res = self.client.get("/movies?page=2")
         data = json.loads(res.data)
         movies = data["movies"]
@@ -109,7 +112,11 @@ class MovieTestCase(unittest.TestCase):
         )
         self.assertEqual(data["offset"], 10)
 
-    def test_get_movies_bad_query_param_type_200(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movies_bad_query_param_type_200(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         # ignore improper query params and return a default of 1 for page
         res = self.client.get("/movies?page=sizzle")
         data = json.loads(res.data)
@@ -117,7 +124,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertLessEqual(len(data["movies"]), 10)
 
-    def test_search_movies(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_search_movies(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         res = self.client.get("/movies?search=tHe")
         data = json.loads(res.data)
 
@@ -163,7 +174,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(data["totalMovies"], 4)
         self.assertEqual(data["offset"], 0)
 
-    def test_search_movies_no_results(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_search_movies_no_results(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         res = self.client.get("/movies?search=rUtAbAgA")
         data = json.loads(res.data)
 
@@ -176,7 +191,12 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(data["totalMovies"], 0)
         self.assertEqual(data["offset"], 0)
 
-    def test_create_movie(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_executive_director(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
+        
         new_movie = {
             "genre": "COMEDY",
             "title": "Wayne's World",
@@ -188,7 +208,57 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertTrue(isinstance(data["id"], int))
 
-    def test_create_movie_without_release_date_or_poster_url(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_casting_director_error_403(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
+        
+        new_movie = {
+            "genre": "COMEDY",
+            "title": "Wayne's World",
+            "releaseDate": "1992-02-14",
+        }
+        res = self.client.post("/movies", json=new_movie)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(data["error"], "Forbidden")
+
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_casting_assistant_error_403(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
+        
+        new_movie = {
+            "genre": "COMEDY",
+            "title": "Wayne's World",
+            "releaseDate": "1992-02-14",
+        }
+        res = self.client.post("/movies", json=new_movie)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(data["error"], "Forbidden")
+
+    def test_create_movie_unauthorized_401(self):
+        new_movie = {
+            "genre": "COMEDY",
+            "title": "Wayne's World",
+            "releaseDate": "1992-02-14",
+        }
+        res = self.client.post("/movies", json=new_movie)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(data["error"], "Unauthorized")
+
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_without_release_date_or_poster_url(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         new_movie = {"genre": "COMEDY", "title": "Wayne's World"}
         res = self.client.post("/movies", json=new_movie)
         data = json.loads(res.data)
@@ -196,7 +266,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertTrue(isinstance(data["id"], int))
 
-    def test_create_movie_400_bad_genre_type(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_400_bad_genre_type(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         # Fails, since genre must be a Genre enum value
         new_movie = {
             "genre": 0,
@@ -210,7 +284,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(data, {"success": False, "error": "Bad Request"})
 
-    def test_create_movie_400_bad_genre_value(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_400_bad_genre_value(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         # Fails, since genre must be one of the Genre enum values
         new_movie = {
             "genre": "BLACK_COMEDY",
@@ -224,7 +302,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(data, {"success": False, "error": "Bad Request"})
 
-    def test_create_movie_400_missing_title(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_400_missing_title(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         # Fails, since title must be a string with length >= 1
         new_movie = {
             "genre": "COMEDY",
@@ -238,7 +320,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(data, {"success": False, "error": "Bad Request"})
 
-    def test_create_movie_non_json_400(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_non_json_400(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         payload = 0b10101010
         res = self.client.post(
             "/movies", data=bytes(payload), content_type="application/json"
@@ -249,7 +335,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_create_movie_415(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_create_movie_415(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         new_movie = 0b10101010
         res = self.client.post(
             "/movies", data=bytes(new_movie), content_type="application/octet-stream"
@@ -260,7 +350,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Unsupported Media Type")
 
-    def test_patch_movies_405(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movies_405(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["create:movies"]}
         # Fails, since PATCH is not allowed on the movies endpoint
         new_movie = {
             "genre": "COMEDY",
@@ -274,7 +368,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 405)
         self.assertEqual(data, {"success": False, "error": "Method Not Allowed"})
 
-    def test_get_movie(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movie(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         res = self.client.get("/movies/1")
         data = json.loads(res.data)
 
@@ -292,7 +390,11 @@ class MovieTestCase(unittest.TestCase):
             },
         )
 
-    def test_get_movie_with_actors(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movie_with_actors(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         with self.app.app_context():
             cast = Cast(movie_id=1, actor_id=1)
             cast.add()
@@ -322,7 +424,11 @@ class MovieTestCase(unittest.TestCase):
             },
         )
 
-    def test_get_movie_404(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_get_movie_404(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies"]}
         res = self.client.get("/movies/99")
         data = json.loads(res.data)
 
@@ -330,7 +436,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Not Found")
 
-    def test_patch_movie(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["read:movies", "modify:movies"]}
         patch_request = [
             {"op": "add", "path": "/genre", "value": "COMEDY"},
             {"op": "remove", "path": "/releaseDate"},
@@ -376,7 +486,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertNotEqual(etag, etag2)
         self.assertTrue(data3["success"])
 
-    def test_patch_movie_400_empty_string_instead_of_remove_op(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_empty_string_instead_of_remove_op(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "add", "path": "/genre", "value": "COMEDY"},
             {"op": "add", "path": "/releaseDate", "value": ""},
@@ -391,7 +505,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_remove_title(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_remove_title(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "remove", "path": "/title"},
         ]
@@ -405,7 +523,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_empty_string_title(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_empty_string_title(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "add", "path": "/title", "value": ""},
         ]
@@ -419,7 +541,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_move_op_not_allowed(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_move_op_not_allowed(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "move", "from": "/title", "path": "/subtitle"},
         ]
@@ -433,7 +559,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_replace_op_not_allowed(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_replace_op_not_allowed(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {
                 "op": "replace",
@@ -451,7 +581,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_copy_op_not_allowed(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_copy_op_not_allowed(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "copy", "from": "/title", "path": "/subtitle"},
         ]
@@ -465,7 +599,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_400_test_op_not_allowed(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_400_test_op_not_allowed(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         patch_request = [
             {"op": "test", "path": "/title", "value": "Anything"},
         ]
@@ -479,7 +617,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Bad Request")
 
-    def test_patch_movie_415_non_json_request_correct_content_type(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_415_non_json_request_correct_content_type(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         payload = 0b10101010
         res = self.client.patch(
             "/movies/1", data=bytes(payload), content_type="application/json"
@@ -490,7 +632,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Unsupported Media Type")
 
-    def test_patch_movie_415_bad_data_and_bad_content_type(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_patch_movie_415_bad_data_and_bad_content_type(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["modify:movies"]}
         payload = 0b10101010
         res = self.client.patch(
             "/movies/1", data=bytes(payload), content_type="application/octet-stream"
@@ -501,7 +647,11 @@ class MovieTestCase(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["error"], "Unsupported Media Type")
 
-    def test_delete_movie(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_delete_movie(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["delete:movies"]}
         res = self.client.delete("/movies/2")
         data = json.loads(res.data)
         with self.app.app_context():
@@ -512,7 +662,11 @@ class MovieTestCase(unittest.TestCase):
             movie_or_none = Movie.query.filter(Movie.id == 2).one_or_none()
             self.assertEqual(movie_or_none, None)
 
-    def test_delete_movie_error(self):
+    @patch('auth.validator.get_token_auth_header')    
+    @patch('auth.validator.verify_decode_jwt')
+    def test_delete_movie_error(self, mock_verify_decode_jwt, mock_get_token_auth_header):
+        mock_get_token_auth_header.return_value = True
+        mock_verify_decode_jwt.return_value = {"permissions": ["delete:movies"]}
         res = self.client.delete("/movies/200")
         data = json.loads(res.data)
 

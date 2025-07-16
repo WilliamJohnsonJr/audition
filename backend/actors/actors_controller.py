@@ -92,7 +92,7 @@ def actors_controller(app: Flask):
     #      { "op": "add", "path": "/a/b/c", "value": [ "foo", "bar" ] }
     #    ]
     @app.route("/actors/<int:actor_id>", methods=["PATCH"])
-    @requires_auth("update:actors")
+    @requires_auth("modify:actors")
     def update_actor(actor_id: int):
         if not isinstance(actor_id, int):
             abort(400)
