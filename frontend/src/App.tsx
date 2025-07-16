@@ -1,6 +1,6 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import "./App.css";
-import { Box, Button, CircularProgress } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import logo from "./assets/AuditionLogoMedium.png";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Home } from "./components/home/Home";
@@ -18,7 +18,7 @@ import { AssignCast } from "./components/casts/AssignCast";
 import { NotFound } from "./components/not-found/NotFound";
 
 export function App() {
-  const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
+  const { isLoading, isAuthenticated } = useAuth0();
 
   return (
     <>

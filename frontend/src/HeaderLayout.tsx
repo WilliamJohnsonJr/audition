@@ -1,5 +1,5 @@
 import { Link as RouterLink, Outlet, useNavigate } from "react-router";
-import { Button, Icon, Link } from "@mui/material";
+import { Button, Link } from "@mui/material";
 import logo from "./assets/AuditionLogoMedium.png";
 import { useAuth0 } from "@auth0/auth0-react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";

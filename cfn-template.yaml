@@ -719,8 +719,16 @@ Resources:
           Name: "DBPassword"
         - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/DATABASE_URL"
           Name: "DATABASE_URL"
-        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/EXCITED"
-          Name: "EXCITED"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/AUTH0_DOMAIN"
+          Name: "AUTH0_DOMAIN"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/ALGORITHMS"
+          Name: "ALGORITHMS"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/API_AUDIENCE"
+          Name: "API_AUDIENCE"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/HYDRATE_DB"
+          Name: "HYDRATE_DB"
+        - ValueFrom: !Sub "arn:aws:ssm:us-east-1:${MyAccountNumber}:parameter/ORIGINS"
+          Name: "ORIGINS"
         VolumesFrom: []
         Cpu: 0
         EntryPoint: []
