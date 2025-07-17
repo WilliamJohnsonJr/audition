@@ -1,9 +1,14 @@
 # Audition: A Movie Casting App for Casting Agencies
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
+Live project at: https://wj-udacity-fs-capstone.com/
+
+Authentication instructions can be found in my submission notes (not here - would not be secure)
+
 ![Audition Logo](./images/AuditionLogoScreenshot.png)
 
 ![Audition Actors Screenshot](./images/ScreenshotActors.png)
+
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
@@ -54,7 +59,11 @@ In Summary: this template generates a small VPC with what I consider to be basic
     - DBUsername
     - DBPassword
     - DATABASE_URL
-    - 
+    - ALGORITHMS
+    - API_AUDIENCE
+    - AUTH0_DOMAIN
+    - HYDRATE_DB
+    - ORIGINS
 - Everything else is included in the CloudFormation template, provided that you pass in the correct environment variables and parameters when running `aws cloudformation create-stack` (I recommend doing that through Parameter Store, but this is an example app so I feed some things in through the cloudformation terminal command as Parameters below).
 ### Steps
 (WIP)
