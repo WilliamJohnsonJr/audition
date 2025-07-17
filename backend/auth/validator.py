@@ -1,5 +1,7 @@
 import json
 import os
+import threading
+import time
 from flask import abort, request
 from functools import wraps
 from jose import jwt
@@ -10,6 +12,29 @@ load_dotenv()
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 ALGORITHMS = [os.getenv("ALGORITHMS", "")]
 API_AUDIENCE = os.getenv("API_AUDIENCE")
+jwks = None
+
+
+# Note: I would find a better way to do this in production. For some reason,
+# all calls to the API hang in AWS if I fetch JWKS in the verify_decode_jwt method below.
+# So one approach is to simply run a thread that refreshes the JWKS every hour.
+def fetch_jwks():
+    global jwks
+    while True:
+        try:
+            response = requests.get(
+                f"https://{AUTH0_DOMAIN}/.well-known/jwks.json", timeout=20
+            )
+            if response.status_code < 300:
+                jwks = response.json()
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+
+        time.sleep(3600)
+
+
+jwks_thread = threading.Thread(target=fetch_jwks, daemon=True)
+jwks_thread.start()
 
 
 class AuthError(Exception):
@@ -45,17 +70,8 @@ def check_permissions(permission, payload):
 
 
 def verify_decode_jwt(token):
-    jwks = {}
-    try:
-        response = requests.get(
-            f"https://{AUTH0_DOMAIN}/.well-known/jwks.json", timeout=20
-        )
-        if response.status_code == 200:
-            jwks = response.json()  # Parse the JSON response
-        else:
-            print(f"Failed to fetch JWKS: {response.status_code} {response.text}")
-    except Exception as e:
-        print(f"Exception: {e}")
+    if not jwks:
+        raise AuthError({"code": "jwks_failure", "description": "jwks failure"}, 500)
 
     unverified_header = jwt.get_unverified_header(token)
 
