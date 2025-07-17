@@ -3,7 +3,7 @@ import os
 from flask import abort, request
 from functools import wraps
 from jose import jwt
-from urllib.request import urlopen
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -45,9 +45,17 @@ def check_permissions(permission, payload):
 
 
 def verify_decode_jwt(token):
-    # Taken from the 2.10 Practice - Validating Auth0 Tokens exercise in the IAM course
-    jsonurl = urlopen(f"https://{AUTH0_DOMAIN}/.well-known/jwks.json")
-    jwks = json.loads(jsonurl.read())
+    jwks = {}
+    try:
+        response = requests.get(
+            f"https://{AUTH0_DOMAIN}/.well-known/jwks.json", timeout=20
+        )
+        if response.status_code == 200:
+            jwks = response.json()  # Parse the JSON response
+        else:
+            print(f"Failed to fetch JWKS: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Exception: {e}")
 
     unverified_header = jwt.get_unverified_header(token)
 

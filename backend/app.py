@@ -36,6 +36,10 @@ def create_app(test_config=None):
         )
         return response
 
+    @app.route("/", methods=["GET"])
+    def healthcheck():
+        return jsonify({"success": True}), 200
+
     movies_controller(app)
 
     actors_controller(app)
@@ -45,11 +49,11 @@ def create_app(test_config=None):
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"success": False, "error": "Bad Request"}), 400
-    
+
     @app.errorhandler(401)
     def unauthorized_request(error):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
+
     @app.errorhandler(403)
     def forbidden_request(error):
         return jsonify({"success": False, "error": "Forbidden"}), 403
