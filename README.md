@@ -1,6 +1,14 @@
 # Audition: A Movie Casting App for Casting Agencies
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
+This app allows a user (depending on their RBAC permissions) to:
+- Create, Edit, Delete Actors
+- Create, Edit Delete Movies
+- Search for Actors
+- Search for Movies
+- Cast Actors to Movies
+- Remove Cast Assignments
+
 Live project at: https://wj-udacity-fs-capstone.com/
 
 Authentication instructions can be found in my submission notes (not here - would not be secure)
@@ -23,6 +31,9 @@ Auth: Auth0 with Role-Based Access Control (RBAC)
 Hosting: AWS RDS (PostgresQL DB), ECS Fargate (Flask API app), and S3 Static-Site Hosting (React Frontend).
 
 See the READMEs in the `frontend` and `backend` directory for specific information on running the Frontend and Backend.
+
+## Important note on setup
+`dotenv` (in the Python backend) and `import.meta.env` (Vite Frontend) set up various environment variables necessary for Auth0 RBAC and auth to work. You must create a `.env` file in the `/frontend` and `/backend` directories for the project to work. See `/frontend/README.md` and `/backend/README.md` for specific details on how to set up each `.env` file.
 
 ## A note on unit tests
 Testing this exhaustively would double the delivery time of this project for the Udacity course, but I have mostly tested the backend API with unittest.
