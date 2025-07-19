@@ -25,7 +25,9 @@ Marshmallow Schemas would be a better choice for a larger project, but I made my
 AUTH0_DOMAIN=YOUR_AUTH0_DOMAIN
 ALGORITHMS=YOUR_AUTH0_ALGORITHMS
 API_AUDIENCE=YOUR_AUTH0_AUDIENCE
-HYDRATE_DB=false # Or true if you want to set up some initial seed data
+HYDRATE_DB=True # IMPORTANT: Remove this completely (do not use HYDRATE_DB=False) if you do not want
+# to hydrate the database, because passing any value here will be interpreted as truthy and
+# will cause the app to hydrate a fresh db. This can break migrations if you're not expecting it.
 DATABASE_URL=postgresql://postgres@localhost:5432/casting
 TEST_DATABASE_URL=postgresql://postgres@localhost:5432/casting_test
 ORIGINS=http://localhost:5173 # Or whatever your localhost is.
