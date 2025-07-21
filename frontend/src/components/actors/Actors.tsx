@@ -103,14 +103,14 @@ export function Actors() {
           className="w-1/2"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="ml-5"
           type="button"
           onClick={() => setSearch(privateSearch)}
         >
           Search
         </Button>
-        <Button href={`/actors/add`} variant="contained" className="ml-5">
+        <Button sx={{backgroundColor: "#1a1a1a !important"}} href={`/actors/add`} variant="contained" className="ml-5">
           Add Actor
         </Button>
       </div>
@@ -120,7 +120,7 @@ export function Actors() {
         </p>
       )}
       <div className="flex-auto justify-center mb-5">
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -128,7 +128,7 @@ export function Actors() {
         >
           Prev
         </Button>
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="ml-2"
           type="button"
           disabled={page === pageMax}

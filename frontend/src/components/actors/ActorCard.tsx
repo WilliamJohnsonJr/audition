@@ -57,7 +57,7 @@ export function ActorCard({
       <CardActions className="flex-auto justify-center">
         {!actorId && (
           <Link component={RouterLink} to={`/actors/${actor.id}`}>
-            <Button
+            <Button sx={{backgroundColor: "#1a1a1a !important"}}
               type="button"
               size="small"
               aria-label={`View actor ${actor.name}`}
@@ -67,7 +67,7 @@ export function ActorCard({
           </Link>
         )}
         {!!unassignCasting && (
-          <Button
+          <Button sx={{backgroundColor: "#1a1a1a !important"}}
             type="button"
             onClick={() => unassignCasting(actor.id)}
             disabled={submitting}
@@ -77,7 +77,7 @@ export function ActorCard({
           </Button>
         )}
         <Link component={RouterLink} to={`/actors/${actor.id}/edit`}>
-          <Button
+          <Button sx={{backgroundColor: "#1a1a1a !important"}}
             type="button"
             size="small"
             aria-label={`Edit actor ${actor.name}`}
@@ -86,7 +86,7 @@ export function ActorCard({
           </Button>
         </Link>
         {!!deleteActor && (
-          <Button
+          <Button sx={{backgroundColor: "#1a1a1a !important"}}
             type="button"
             onClick={() => deleteActor(actor.id)}
             disabled={submitting}

@@ -104,7 +104,7 @@ export function Movies() {
           variant="outlined"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="ml-5"
           type="button"
           startIcon={<Search />}
@@ -112,7 +112,7 @@ export function Movies() {
         >
           Search
         </Button>
-        <Button href={`/movies/add`} variant="contained" className="ml-5">
+        <Button sx={{backgroundColor: "#1a1a1a !important"}} href={`/movies/add`} variant="contained" className="ml-5">
           Add Movie
         </Button>
       </div>
@@ -122,7 +122,7 @@ export function Movies() {
         </p>
       )}
       <div className="flex-auto justify-center mb-5">
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -130,7 +130,7 @@ export function Movies() {
         >
           Prev
         </Button>
-        <Button
+        <Button sx={{backgroundColor: "#1a1a1a !important"}}
           className="ml-2"
           type="button"
           disabled={page === pageMax}

@@ -13,22 +13,22 @@ export function Home() {
       {isAuthenticated ? (
         <div className="flex justify-center">
           <Link component={RouterLink} to="/movies">
-            <Button type="button">Movies</Button>
+            <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button">Movies</Button>
           </Link>
           <Link component={RouterLink} to="/actors">
-            <Button type="button" className="ml-5">
+            <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button" className="ml-5">
               Actors
             </Button>
           </Link>
           <Link component={RouterLink} to="/casts">
-            <Button type="button" className="ml-5">
+            <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button" className="ml-5">
               Casts
             </Button>
           </Link>
         </div>
       ) : (
         <div>
-          <Button type="button" onClick={() => loginWithRedirect()}>
+          <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button" onClick={() => loginWithRedirect()}>
             Log In
           </Button>
         </div>

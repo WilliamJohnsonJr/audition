@@ -119,7 +119,7 @@ export function AssignCast() {
             </div>
           </div>
           <div className="mb-5 flex justify-center">
-            <Button type="submit" variant="outlined" disabled={submitting}>
+            <Button sx={{backgroundColor: "#1a1a1a !important"}} type="submit" variant="outlined" disabled={submitting}>
               Assign
             </Button>
           </div>

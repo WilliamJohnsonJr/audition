@@ -7,9 +7,12 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import { StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
+import {
+  createTheme,
+  StyledEngineProvider,
+  ThemeProvider,
+} from "@mui/material/styles";
 import GlobalStyles from "@mui/material/GlobalStyles";
-import { theme } from "./theme.ts";
 import { baseUrl, BaseUrlContext } from "./shared/base-url.ts";
 import { Auth0ProviderWithNavigate } from "./shared/auth0-provider-with-navigate.tsx";
 
@@ -20,7 +23,24 @@ if (root) {
     <StrictMode>
       <StyledEngineProvider enableCssLayer>
         <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
-        <ThemeProvider theme={theme}>
+        <ThemeProvider
+          theme={createTheme({
+            colorSchemes: {
+              dark: {
+                palette: {
+                  contrastThreshold: 4.5,
+                  primary: {
+                    main: "#4ED7FA",
+                  },
+                  secondary: {
+                    main: "#c500f6",
+                  },
+                },
+              },
+            },
+          })}
+          defaultMode="dark"
+        >
           <BrowserRouter>
             <Auth0ProviderWithNavigate>
               <BaseUrlContext value={baseUrl}>
@@ -30,7 +50,7 @@ if (root) {
           </BrowserRouter>
         </ThemeProvider>
       </StyledEngineProvider>
-    </StrictMode>,
+    </StrictMode>
   );
 } else {
   throw new Error("No root found.");

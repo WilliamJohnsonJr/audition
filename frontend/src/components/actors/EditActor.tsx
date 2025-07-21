@@ -225,7 +225,7 @@ export function EditActor() {
               error={formik.touched.age && Boolean(formik.errors.age)}
               helperText={formik.touched.age && formik.errors.age}
             />
-            <Button
+            <Button sx={{backgroundColor: "#1a1a1a !important"}}
               color="primary"
               variant="outlined"
               fullWidth
