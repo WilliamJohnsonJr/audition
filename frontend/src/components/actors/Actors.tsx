@@ -9,7 +9,7 @@ import { Alert, Link, Snackbar } from "@mui/material";
 import { BaseUrlContext } from "../../shared/base-url";
 import { fetchWithAuth } from "../../api-helper/api-helper";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Link as RouterLink } from 'react-router';
+import { Link as RouterLink } from "react-router";
 
 export function Actors() {
   const baseUrl = useContext(BaseUrlContext);
@@ -104,7 +104,7 @@ export function Actors() {
           className="w-1/2 mb-5"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button 
+        <Button
           className="ml-5"
           type="button"
           onClick={() => setSearch(privateSearch)}
@@ -112,7 +112,12 @@ export function Actors() {
           Search
         </Button>
         <Link component={RouterLink} to="/actors/add">
-          <Button sx={{backgroundColor: "#4ED7FA !important"}} color="secondary" type="button" className="ml-5">
+          <Button
+            sx={{ backgroundColor: "#4ED7FA !important" }}
+            color="secondary"
+            type="button"
+            className="ml-5"
+          >
             Add Actor
           </Button>
         </Link>
@@ -123,7 +128,7 @@ export function Actors() {
         </p>
       )}
       <div className="flex justify-center mb-5">
-        <Button 
+        <Button
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -131,7 +136,7 @@ export function Actors() {
         >
           Prev
         </Button>
-        <Button 
+        <Button
           className="ml-2"
           type="button"
           disabled={page === pageMax}

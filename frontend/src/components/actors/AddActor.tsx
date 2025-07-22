@@ -176,7 +176,7 @@ export function AddActor() {
             error={formik.touched.age && Boolean(formik.errors.age)}
             helperText={formik.touched.age && formik.errors.age}
           />
-          <Button 
+          <Button
             color="primary"
             variant="outlined"
             fullWidth

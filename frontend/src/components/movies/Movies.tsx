@@ -105,7 +105,7 @@ export function Movies() {
           variant="outlined"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button 
+        <Button
           className="ml-5"
           type="button"
           startIcon={<Search />}
@@ -114,10 +114,15 @@ export function Movies() {
           Search
         </Button>
         <Link component={RouterLink} to="/movies/add">
-          <Button sx={{backgroundColor: "#4ED7FA !important"}} color="secondary" type="button" className="ml-5">
-          Add Movie
+          <Button
+            sx={{ backgroundColor: "#4ED7FA !important" }}
+            color="secondary"
+            type="button"
+            className="ml-5"
+          >
+            Add Movie
           </Button>
-          </Link>
+        </Link>
       </div>
       {data.totalMovies > 0 && (
         <p className="mb-5">
@@ -125,7 +130,7 @@ export function Movies() {
         </p>
       )}
       <div className="flex justify-center mb-5">
-        <Button 
+        <Button
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -133,7 +138,7 @@ export function Movies() {
         >
           Prev
         </Button>
-        <Button 
+        <Button
           className="ml-2"
           type="button"
           disabled={page === pageMax}

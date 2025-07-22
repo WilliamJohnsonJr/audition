@@ -50,7 +50,7 @@ if (root) {
           </StyledEngineProvider>
         </Auth0ProviderWithNavigate>
       </BrowserRouter>
-    </StrictMode>
+    </StrictMode>,
   );
 } else {
   throw new Error("No root found.");

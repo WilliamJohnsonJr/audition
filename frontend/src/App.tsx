@@ -14,7 +14,6 @@ import { AddActor } from "./components/actors/AddActor";
 import { AssignCast } from "./components/casts/AssignCast";
 
 export function App() {
-
   return (
     <>
       <Routes>

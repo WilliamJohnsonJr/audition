@@ -28,7 +28,7 @@ export function Home() {
         </div>
       ) : (
         <div>
-          <Button  type="button" onClick={() => loginWithRedirect()}>
+          <Button type="button" onClick={() => loginWithRedirect()}>
             Log In
           </Button>
         </div>

@@ -67,13 +67,13 @@ export function AssignCast() {
 
   function handleMovieChange(
     _event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    value: { label: string; id: number } | null,
   ) {
     formik.setFieldValue("movie", value);
   }
   function handleActorChange(
     _event: SyntheticEvent,
-    value: { label: string; id: number } | null
+    value: { label: string; id: number } | null,
   ) {
     formik.setFieldValue("actor", value);
   }

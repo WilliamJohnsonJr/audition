@@ -40,7 +40,6 @@ function LogoutButton() {
 
   return (
     <Button
-      
       type="button"
       color="secondary"
       className="float-right bg-gradient-to-r focus:from-orange-500 focus:to-pink-500 focus:text-white hover:from-orange-500 hover:to-pink-500 hover:text-white"
