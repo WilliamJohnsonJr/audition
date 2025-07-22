@@ -50,7 +50,7 @@ if (root) {
           </BrowserRouter>
         </ThemeProvider>
       </StyledEngineProvider>
-    </StrictMode>
+    </StrictMode>,
   );
 } else {
   throw new Error("No root found.");
