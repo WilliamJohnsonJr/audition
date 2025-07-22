@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 import "./App.css";
 import { Home } from "./components/home/Home";
-import { Logout } from "./components/login/Logout";
 import { HeaderLayout } from "./HeaderLayout";
 import { Movies } from "./components/movies/Movies";
 import { ViewMovie } from "./components/movies/ViewMovie";
@@ -14,6 +13,7 @@ import { AddActor } from "./components/actors/AddActor";
 import { AssignCast } from "./components/casts/AssignCast";
 
 export function App() {
+
   return (
     <>
       <Routes>
@@ -34,7 +34,6 @@ export function App() {
           <Route index element={<AssignCast />} />
         </Route>
         <Route path="/login" element={<Home />} />
-        <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<Navigate replace to="/login" />} />
       </Routes>
     </>

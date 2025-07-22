@@ -21,36 +21,36 @@ const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     <StrictMode>
-      <BrowserRouter>
-        <Auth0ProviderWithNavigate>
-          <StyledEngineProvider enableCssLayer>
-            <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
-            <ThemeProvider
-              theme={createTheme({
-                colorSchemes: {
-                  dark: {
-                    palette: {
-                      contrastThreshold: 4.5,
-                      primary: {
-                        main: "#4ED7FA",
-                      },
-                      secondary: {
-                        main: "#c500f6",
-                      },
-                    },
+      <StyledEngineProvider enableCssLayer>
+        <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
+        <ThemeProvider
+          theme={createTheme({
+            colorSchemes: {
+              dark: {
+                palette: {
+                  contrastThreshold: 4.5,
+                  primary: {
+                    main: "#4ED7FA",
+                  },
+                  secondary: {
+                    main: "#c500f6",
                   },
                 },
-              })}
-              defaultMode="dark"
-            >
+              },
+            },
+          })}
+          defaultMode="dark"
+        >
+          <BrowserRouter>
+            <Auth0ProviderWithNavigate>
               <BaseUrlContext value={baseUrl}>
                 <App />
               </BaseUrlContext>
-            </ThemeProvider>
-          </StyledEngineProvider>
-        </Auth0ProviderWithNavigate>
-      </BrowserRouter>
-    </StrictMode>,
+            </Auth0ProviderWithNavigate>
+          </BrowserRouter>
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </StrictMode>
   );
 } else {
   throw new Error("No root found.");
