@@ -25,7 +25,7 @@ export function ActorCard({
 }) {
   const { actorId } = useParams();
   return (
-    <Card sx={{ width: 350 }} className="rounded-xl">
+    <Card sx={{ width: 300 }} className="rounded-xl">
       <ErrorBoundary fallback={<p>The image failed to load</p>}>
         {actor.photoUrl && !actor.photoUrl.includes("example.example") ? (
           <CardMedia
@@ -57,7 +57,7 @@ export function ActorCard({
       <CardActions className="flex-auto justify-center">
         {!actorId && (
           <Link component={RouterLink} to={`/actors/${actor.id}`}>
-            <Button sx={{backgroundColor: "#1a1a1a !important"}}
+            <Button 
               type="button"
               size="small"
               aria-label={`View actor ${actor.name}`}
@@ -67,7 +67,7 @@ export function ActorCard({
           </Link>
         )}
         {!!unassignCasting && (
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             onClick={() => unassignCasting(actor.id)}
             disabled={submitting}
@@ -77,7 +77,7 @@ export function ActorCard({
           </Button>
         )}
         <Link component={RouterLink} to={`/actors/${actor.id}/edit`}>
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             size="small"
             aria-label={`Edit actor ${actor.name}`}
@@ -86,7 +86,7 @@ export function ActorCard({
           </Button>
         </Link>
         {!!deleteActor && (
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             onClick={() => deleteActor(actor.id)}
             disabled={submitting}

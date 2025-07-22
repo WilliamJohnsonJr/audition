@@ -20,6 +20,7 @@ export const Auth0ProviderWithNavigate = ({ children }: PropsWithChildren) => {
 
   return (
     <Auth0Provider
+      cacheLocation="localstorage"
       domain={domain as string}
       clientId={clientId as string}
       useRefreshTokens={true}

@@ -21,10 +21,10 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 export function AddActor() {
   const baseUrl = useContext(BaseUrlContext);
+  const { getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const { getAccessTokenSilently } = useAuth0();
   const validationSchema = yup.object({
     name: yup.string().min(1).required("Name is required"),
     gender: yup.string().oneOf(Object.values(Gender)),
@@ -176,7 +176,7 @@ export function AddActor() {
             error={formik.touched.age && Boolean(formik.errors.age)}
             helperText={formik.touched.age && formik.errors.age}
           />
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             color="primary"
             variant="outlined"
             fullWidth

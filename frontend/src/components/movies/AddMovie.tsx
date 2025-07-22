@@ -116,7 +116,7 @@ export function AddMovie() {
         )}
       </Snackbar>
       <div>
-        <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button" onClick={() => navigate(-1)} className="mb-5">
+        <Button  type="button" onClick={() => navigate(-1)} className="mb-5">
           Back
         </Button>
         <form onSubmit={formik.handleSubmit}>
@@ -179,7 +179,7 @@ export function AddMovie() {
             }
             helperText={formik.touched.releaseDate && formik.errors.releaseDate}
           />
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             color="primary"
             variant="outlined"
             fullWidth

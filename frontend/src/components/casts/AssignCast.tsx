@@ -67,16 +67,14 @@ export function AssignCast() {
 
   function handleMovieChange(
     _event: SyntheticEvent,
-    value: { label: string; id: number } | null,
+    value: { label: string; id: number } | null
   ) {
-    console.log(value);
     formik.setFieldValue("movie", value);
   }
   function handleActorChange(
     _event: SyntheticEvent,
-    value: { label: string; id: number } | null,
+    value: { label: string; id: number } | null
   ) {
-    console.log(value);
     formik.setFieldValue("actor", value);
   }
 
@@ -110,16 +108,14 @@ export function AssignCast() {
       </Snackbar>
       <div>
         <form onSubmit={formik.handleSubmit}>
-          <div>
-            <div className="mb-5 flex justify-center">
+          <div className="mb-5 flex flex-col items-center w-full">
+            <div className="w-full lg:w-1/2">
               <MovieAutosearch formik={formik} onChange={handleMovieChange} />
             </div>
-            <div className="mb-5 flex justify-center">
+            <div className="w-full lg:w-1/2">
               <ActorAutosearch formik={formik} onChange={handleActorChange} />
             </div>
-          </div>
-          <div className="mb-5 flex justify-center">
-            <Button sx={{backgroundColor: "#1a1a1a !important"}} type="submit" variant="outlined" disabled={submitting}>
+            <Button type="submit" variant="outlined" disabled={submitting}>
               Assign
             </Button>
           </div>

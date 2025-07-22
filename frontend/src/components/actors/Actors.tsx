@@ -5,10 +5,11 @@ import { useDataLoader } from "../../shared/data-loader";
 import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
 import { ActorCard } from "./ActorCard";
-import { Alert, Snackbar } from "@mui/material";
+import { Alert, Link, Snackbar } from "@mui/material";
 import { BaseUrlContext } from "../../shared/base-url";
 import { fetchWithAuth } from "../../api-helper/api-helper";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link as RouterLink } from 'react-router';
 
 export function Actors() {
   const baseUrl = useContext(BaseUrlContext);
@@ -100,27 +101,29 @@ export function Actors() {
           id="search-actor-text-field"
           label="Actor Search"
           variant="outlined"
-          className="w-1/2"
+          className="w-1/2 mb-5"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+        <Button 
           className="ml-5"
           type="button"
           onClick={() => setSearch(privateSearch)}
         >
           Search
         </Button>
-        <Button sx={{backgroundColor: "#1a1a1a !important"}} href={`/actors/add`} variant="contained" className="ml-5">
-          Add Actor
-        </Button>
+        <Link component={RouterLink} to="/actors/add">
+          <Button sx={{backgroundColor: "#4ED7FA !important"}} color="secondary" type="button" className="ml-5">
+            Add Actor
+          </Button>
+        </Link>
       </div>
       {data.totalActors > 0 && (
         <p className="mb-5">
           Page {page} of {pageMax}
         </p>
       )}
-      <div className="flex-auto justify-center mb-5">
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+      <div className="flex justify-center mb-5">
+        <Button 
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -128,7 +131,7 @@ export function Actors() {
         >
           Prev
         </Button>
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+        <Button 
           className="ml-2"
           type="button"
           disabled={page === pageMax}
@@ -155,7 +158,7 @@ export function Actors() {
       ) : data && !!data.actors.length ? (
         <ul className="list-none">
           {data.actors.map((actor: Actor) => (
-            <li className="inline-flex mb-10 mx-2" key={actor.id}>
+            <li className="inline-block mb-10 mx-2" key={actor.id}>
               <ActorCard actor={actor} deleteActor={deleteActor} />
             </li>
           ))}

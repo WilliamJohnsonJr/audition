@@ -19,7 +19,7 @@ export function Logout() {
         <img src={logo} alt="Audition Logo" />
       </div>
       <p>You have been logged out</p>
-      <Button sx={{backgroundColor: "#1a1a1a !important"}} type="button" onClick={() => loginWithRedirect()}>
+      <Button type="button" onClick={() => loginWithRedirect()}>
         Log In
       </Button>
     </div>

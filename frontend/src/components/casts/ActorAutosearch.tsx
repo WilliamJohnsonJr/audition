@@ -87,7 +87,7 @@ export function ActorAutosearch({
 
   return (
     <Autocomplete
-      className="w-1/2"
+      className="w-full"
       open={open}
       onOpen={handleOpen}
       onClose={handleClose}

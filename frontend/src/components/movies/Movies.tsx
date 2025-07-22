@@ -5,11 +5,12 @@ import { useDataLoader } from "../../shared/data-loader";
 import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
 import { MovieCard } from "./MovieCard";
-import { Alert, Snackbar } from "@mui/material";
+import { Alert, Link, Snackbar } from "@mui/material";
 import Search from "@mui/icons-material/Search";
 import { BaseUrlContext } from "../../shared/base-url";
 import { fetchWithAuth } from "../../api-helper/api-helper";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link as RouterLink } from "react-router";
 
 export function Movies() {
   const baseUrl = useContext(BaseUrlContext);
@@ -99,12 +100,12 @@ export function Movies() {
       <div className="flex-auto justify-center my-5">
         <TextField
           id="search-movie-text-field"
-          className="w-1/2"
+          className="w-1/2 mb-5"
           label="Movie Search"
           variant="outlined"
           onChange={(event) => handleSearch(event.target.value)}
         />
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+        <Button 
           className="ml-5"
           type="button"
           startIcon={<Search />}
@@ -112,17 +113,19 @@ export function Movies() {
         >
           Search
         </Button>
-        <Button sx={{backgroundColor: "#1a1a1a !important"}} href={`/movies/add`} variant="contained" className="ml-5">
+        <Link component={RouterLink} to="/movies/add">
+          <Button sx={{backgroundColor: "#4ED7FA !important"}} color="secondary" type="button" className="ml-5">
           Add Movie
-        </Button>
+          </Button>
+          </Link>
       </div>
       {data.totalMovies > 0 && (
         <p className="mb-5">
           Page {page} of {pageMax}
         </p>
       )}
-      <div className="flex-auto justify-center mb-5">
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+      <div className="flex justify-center mb-5">
+        <Button 
           className="mr-2"
           type="button"
           disabled={page < 2}
@@ -130,7 +133,7 @@ export function Movies() {
         >
           Prev
         </Button>
-        <Button sx={{backgroundColor: "#1a1a1a !important"}}
+        <Button 
           className="ml-2"
           type="button"
           disabled={page === pageMax}
@@ -140,7 +143,7 @@ export function Movies() {
         </Button>
       </div>
       {isLoading ? (
-        <ul className="list-none">
+        <ul className="list-none flex justify-center">
           <li className="inline-flex mb-10 mx-2" key="skel-1">
             <Skeleton variant="rounded" width={350} height={300} />
           </li>
@@ -157,7 +160,7 @@ export function Movies() {
       ) : data && !!data.movies.length ? (
         <ul className="list-none">
           {data.movies.map((movie: Movie) => (
-            <li className="inline-flex mb-10 mx-2" key={movie.id}>
+            <li className="inline-block mb-10 mx-2" key={movie.id}>
               <MovieCard movie={movie} deleteMovie={deleteMovie} />
             </li>
           ))}

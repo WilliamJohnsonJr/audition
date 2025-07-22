@@ -10,7 +10,6 @@ export function HeaderLayout() {
     <>
       <nav className="mb-5 flex justify-between">
         <Button
-          sx={{ backgroundColor: "#1a1a1a !important" }}
           startIcon={<ArrowBackIcon />}
           type="button"
           color="secondary"
@@ -41,7 +40,7 @@ function LogoutButton() {
 
   return (
     <Button
-      sx={{ backgroundColor: "#1a1a1a !important" }}
+      
       type="button"
       color="secondary"
       className="float-right bg-gradient-to-r focus:from-orange-500 focus:to-pink-500 focus:text-white hover:from-orange-500 hover:to-pink-500 hover:text-white"

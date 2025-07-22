@@ -27,7 +27,7 @@ export function MovieCard({
   const { movieId } = useParams();
 
   return (
-    <Card sx={{ width: 350 }} className="rounded-xl">
+    <Card sx={{ width: 300 }} className="rounded-xl">
       <ErrorBoundary fallback={<p>The image failed to load</p>}>
         {movie.posterUrl && !movie.posterUrl.includes("example.example") ? (
           <CardMedia
@@ -57,7 +57,7 @@ export function MovieCard({
       <CardActions className="flex-auto justify-center">
         {!movieId && (
           <Link component={RouterLink} to={`/movies/${movie.id}`}>
-            <Button sx={{backgroundColor: "#1a1a1a !important"}}
+            <Button 
               type="button"
               size="small"
               aria-label={`View movie ${movie.title}`}
@@ -67,7 +67,7 @@ export function MovieCard({
           </Link>
         )}
         {!!unassignCasting && (
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             onClick={() => unassignCasting(movie.id)}
             disabled={submitting}
@@ -77,7 +77,7 @@ export function MovieCard({
           </Button>
         )}
         <Link component={RouterLink} to={`/movies/${movie.id}/edit`}>
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             size="small"
             aria-label={`Edit movie ${movie.title}`}
@@ -86,7 +86,7 @@ export function MovieCard({
           </Button>
         </Link>
         {!!deleteMovie && (
-          <Button sx={{backgroundColor: "#1a1a1a !important"}}
+          <Button 
             type="button"
             onClick={() => deleteMovie(movie.id)}
             disabled={submitting}
