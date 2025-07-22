@@ -1,4 +1,8 @@
 # Audition: A Movie Casting App for Casting Agencies
+![Audition Logo](./images/AuditionLogoScreenshot.png)
+
+![Audition GIF](./images/audition.gif)
+
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
 This app allows a user (depending on their RBAC permissions) to:
@@ -10,13 +14,6 @@ This app allows a user (depending on their RBAC permissions) to:
 - Remove Cast Assignments
 
 Live project at: https://wj-udacity-fs-capstone.com/
-
-Authentication instructions can be found in my submission notes (not here - would not be secure)
-
-![Audition Logo](./images/AuditionLogoScreenshot.png)
-
-![Audition Actors Screenshot](./images/ScreenshotActors.png)
-
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
@@ -31,6 +28,13 @@ Auth: Auth0 with Role-Based Access Control (RBAC)
 Hosting: AWS RDS (PostgresQL DB), ECS Fargate (Flask API app), and S3 Static-Site Hosting (React Frontend).
 
 See the READMEs in the `frontend` and `backend` directory for specific information on running the Frontend and Backend.
+
+## Screenshots
+![Audition Home Screenshot](./images/ScreenshotHome.png)
+![Audition Movies Screenshot](./images/ScreenshotMovies.png)
+![Audition Actors Screenshot](./images/ScreenshotActors.png)
+![Audition Actor Screenshot](./images/ScreenshotActor.png)
+![Audition Assign Cast Screenshot](./images/ScreenshotAssignCast.png)
 
 ## Important note on setup
 `dotenv` (in the Python backend) and `import.meta.env` (Vite Frontend) set up various environment variables necessary for Auth0 RBAC and auth to work. You must create a `.env` file in the `/frontend` and `/backend` directories for the project to work. See `/frontend/README.md` and `/backend/README.md` for specific details on how to set up each `.env` file.
@@ -101,9 +105,3 @@ aws cloudformation create-stack --stack-name capstone-stack --template-url https
     - Enhanced Monitoring is enabled on the RDS instance.
     - There is an ALB in front of the ECS Fargate tasks that run the API, and it has Elastic Network Interfaces in each of the two public subnets of the VPC.
     - RDS has a cost since it is a managed service, and since I wanted to set this up with RDS (best practice) instead of just putting PostgresQL on an EC2 Instance.
-
-## Screenshots
-![Audition Home Screenshot](./images/ScreenshotHome.png)
-![Audition Movies Screenshot](./images/ScreenshotMovies.png)
-![Audition Actor Screenshot](./images/ScreenshotActor.png)
-![Audition Assign Cast Screenshot](./images/ScreenshotAssignCast.png)
