@@ -3,6 +3,18 @@
 
 ![Audition GIF](./images/audition.gif)
 
+## Table of Contents
+- [Summary](#summary)
+- [Screenshots](#screenshots)
+- [Important note on setup](#important-note-on-setup)
+- [A note on unit tests](#a-note-on-unit-tests)
+- [Postman Tests](#postman-tests)
+- [AWS Architecture Overview](#aws-architecture-overview)
+- [Requirements to deploy on AWS](#requirements-to-deploy-on-aws)
+- [Considerations for the CloudFormation Template](#considerations-for-the-cloudformation-template)
+
+## Summary
+
 Capstone project for the Udacity Full Stack Web Developer Nanodegree
 
 This app allows a user (depending on their RBAC permissions) to:
@@ -49,6 +61,12 @@ Testing this exhaustively would double the delivery time of this project for the
 There is a Postman Collection included in the `/backend` directory that tests all RBAC roles and actions on the API. You will need to set up your authorization tokens for each RBAC role to use the collection. See the backend README for details.
 
 ## AWS Architecture Overview
+
+Architecture Diagram:
+
+![AWS Architecture Diagram](./images/Full%20Stack%20Capstone%20Subnets.png)
+
+- The Frontend is hosted as a static site on S3. Deployment is as easy as `npm run build` in the `/frontend` directory, then upload the build contents to the S3 bucket. It utilizes the wildcard wj-udacity-fs-capstone.com SSL cert along with the API.
 - API Entrypoint at an Application Load Balancer via a custom domain with an A Record alias pointing at the ALB in Route53.
 - ALB connects to the ECS tasks running in Fargate in the private subnets of a new (small!) VPC.
 - ECS task(s) connect to the PostgresQL DB in RDS.
@@ -56,8 +74,11 @@ There is a Postman Collection included in the `/backend` directory that tests al
 - RDS deployment is single instance with no backups (just for test projects, not for prod)
 - Communication between ECS, RDS, and ALB is inside the VPC and over HTTP/TCP (for production, you'd probably want SSL even inside the VPC)
 - ECS and RDS are hosted in private subnets, and all communication from ECS to AWS Services (logs, S3, etc.) happens over VPC Endpoints with Private DNS enabled. This means that no traffic goes from ECS to AWS Services over the public internet. It stays within the VPC. It also does not travel through NAT Gateways (which makes container image pulls from S3, through ECR, free).
+- Access is controlled by security groups. The bastion host and the Fargate task have access to RDS via their security group. The ALB has access to Fargate via its security group. The VPC Endpoints have traffic directed to them via their security group.
+![AWS Security Groups Diagram](./images/Full%20Stack%20Capstone%20Security%20Groups.png)
 
-In Summary: this template generates a small VPC with what I consider to be basic best practices (logs enabled, entrypoint is an ALB, services and DB are in private subnets and isolated from the public internet).
+
+In Summary: this template generates a small VPC with what I consider to be basic best practices (logs enabled, API entrypoint is an ALB, services and DB are in private subnets and isolated from the public internet).
 
 
 ## Requirements to deploy on AWS
@@ -66,7 +87,7 @@ In Summary: this template generates a small VPC with what I consider to be basic
 - (after deployment) Create an A record alias to the API's ALB at `api.your-domain.example`.
 - A private ECR repository named: "capstone-repository" containing your app image with a `:latest` tag.
 - An open 10.16.0.0/24 CIDR block among your AWS VPCs.
-- Two SSL Certificates from Amazon Certificate Manager (one for api.{YOUR_DOMAIN}, one for Frontend).
+- An SSL Certificate from Amazon Certificate Manager (a wildcard cert can cover api.{YOUR_DOMAIN} and your base domain for the Frontend).
 - An S3 Bucket to hold the initial CloudFormation template
 - Upload the initial CloudFormation template to S3. Example: `aws s3 cp CapstoneTemplate-template.yaml s3://{YOUR_BUCKET_NAME}/CapstoneTemplate-template.yaml`
 - DNS records that point to the API's Application Load Balancer from your custom domain.
@@ -81,7 +102,19 @@ In Summary: this template generates a small VPC with what I consider to be basic
     - ORIGINS
 - Everything else is included in the CloudFormation template, provided that you pass in the correct environment variables and parameters when running `aws cloudformation create-stack` (I recommend doing that through Parameter Store, but this is an example app so I feed some things in through the cloudformation terminal command as Parameters below).
 ### Steps
-(WIP)
+- Build your local Docker image for the API in the `/backend` directory.
+- Log in to AWS ECR with Docker:
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+```
+- Tag your Docker image:
+```bash
+docker tag capstone:latest YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/YOUR_REPOSITORY_NAME:latest
+```
+- Push your tagged Docker image to AWS ECR:
+```bash
+docker push YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/YOUR_REPOSITORY_NAME:latest
+```
 - Deploy the initial CloudFormation Stack to bootstrap necessary resources and get the services, etc. running. Example CLI command:
 ```bash
 aws cloudformation create-stack --stack-name capstone-stack --template-url https://{YOUR_BUCKET_NAME}.s3.amazonaws.com/CapstoneTemplate-template.yaml --parameters ParameterKey=MyAccountNumber,ParameterValue=YOUR_ACCOUNT_NUMBER ParameterKey=MyUsername,ParameterValue=YOUR_USERNAME ParameterKey=MyIPAddressCIDR,ParameterValue=0.0.0.0/32 ParameterKey=DBUsername,ParameterValue=YOUR_DB_USERNAME ParameterKey=DBPassword,ParameterValue="SUPERsecretPASSWORD" --capabilities CAPABILITY_NAMED_IAM --profile default
@@ -89,6 +122,7 @@ aws cloudformation create-stack --stack-name capstone-stack --template-url https
 - Automated builds with CodeBuild are out-of-scope for this project.
 
 ## Considerations for the CloudFormation template
+- This setup will cost about $159/month to run on AWS (as of July 2025), mostly due to the costs for the VPC Endpoints and NAT Gateways.
 - The VPC is deliberately kept small for this project (/24 CIDR, less than 256 available IPs). You should probably use a larger VPC in production.
 - SSL communication with the DB is not turned on. I'd recommend turning that on in production.
 - There is no Replica or Backup for the PostgresQL DB. You would want those in a production app.
