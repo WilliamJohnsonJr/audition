@@ -25,7 +25,7 @@ This app allows a user (depending on their RBAC permissions) to:
 - Cast Actors to Movies
 - Remove Cast Assignments
 
-Live project at: https://wj-udacity-fs-capstone.com/
+The application is not live online due to the costs required to run it in the cloud indefinitely (about $159/month), but can be spun up in about 20 minutes. It's a great place to start to spin up a web-scale full-stack application on AWS.
 
 Initial backend code forked from https://github.com/udacity/render-cloud-example. Everything was pretty heavily modified after that.
 
